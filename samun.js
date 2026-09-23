@@ -1,7 +1,7 @@
 'use strict';
 /* =========================================================
    냥공부 · 사문 탭 — 개념 인출 훈련 + 자료 계산 드릴 + 예상 점수
-   카드: samun_cards.json (마더텅 기출 OX 607제 · 수특 개념 체크 · 수특 용어 · 윤성훈 HOT 100)
+   카드: samun_cards.json (마더텅 기출 OX 607제 · 수특 개념 체크 · 수특 용어 · 윤성훈 HOT 100 · 문서연 에센셜)
    기록: S.sm (이 기기 localStorage, 냥공부 백업 코드에 같이 들어감)
    ========================================================= */
 const SM = (() => {
@@ -262,7 +262,7 @@ function render(){
         <span class="tr"><i style="width:${c.tries?Math.round(c.m*100):0}%;background:${c.m>=.8?'var(--mint)':c.m>=.55?'var(--butter)':'var(--pink)'}"></i></span>
         <span class="v">${c.tries ? Math.round(c.m*100)+'%' : '—'}</span></button>`).join('')}
     </div>
-    <p class="note" style="font-size:14px;line-height:1.5">출처: 2027 마더텅 수능기출 사회·문화 「기출 OX 607제」(정답·해설은 교재 정답표), 2027 EBS 수능특강 사회·문화 개념 체크·용어 정리, 윤성훈 사회문화 HOT 100.
+    <p class="note" style="font-size:14px;line-height:1.5">출처: 2027 마더텅 수능기출 사회·문화 「기출 OX 607제」(정답·해설은 교재 정답표), 2027 EBS 수능특강 사회·문화 개념 체크·용어 정리, 윤성훈 사회문화 HOT 100, 문서연 에센셜(기출 선지 분류, 정답·해설은 교재 정답판).
       예상 점수는 2026학년도 6·9월 모평과 수능의 단원별 문항 수로 가중한 추정이고, 등급은 최근 수능의 대략적인 등급컷으로 바꾼 참고값이에요.</p>`;
   $('#sm-go').onclick = () => start({});
   $('#sm-wrong').onclick = () => start({wrong:true});

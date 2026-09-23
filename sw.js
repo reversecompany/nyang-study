@@ -2,7 +2,7 @@
    - 오프라인에서도 열리게 앱 껍데기를 캐시
    - 서버(GitHub Actions)는 "깨우기" 푸시만 보낸다. 무슨 말을 할지는
      기기에 저장된 공부 기록(state.json)을 보고 여기서 고른다. */
-const VER = 'nyang-v4';
+const VER = 'nyang-v5';
 const SHELL = ['./', 'index.html', 'samun.js', 'samun_cards.json', 'manifest.json', 'icons/icon-192.png', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
