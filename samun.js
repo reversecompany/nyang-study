@@ -23,10 +23,10 @@ const CH = [
   {n:'문화 변동', u:'Ⅲ', w:1.0},
   {n:'사회 불평등 현상의 이해', u:'Ⅳ', w:0.67},
   {n:'사회 이동과 계층 구조', u:'Ⅳ', w:1.0, f:.6, drill:['mob','struct']},
-  {n:'다양한 사회 불평등', u:'Ⅳ', w:1.67, f:.6, drill:['pov','mix']},
-  {n:'사회 복지와 복지 제도', u:'Ⅳ', w:1.0},
+  {n:'다양한 사회 불평등', u:'Ⅳ', w:1.67, f:.6, drill:['pov','mix','base','rate','idx']},
+  {n:'사회 복지와 복지 제도', u:'Ⅳ', w:1.0, f:.35, drill:['welf']},
   {n:'사회 변동과 사회 운동', u:'Ⅴ', w:1.67},
-  {n:'현대 사회의 변화', u:'Ⅴ', w:2.0, f:.5, drill:['pop']},
+  {n:'현대 사회의 변화', u:'Ⅴ', w:2.0, f:.5, drill:['pop','pop2']},
 ];
 const WSUM = CH.slice(1).reduce((a,c)=>a+c.w,0);
 /* 원점수 → 등급: 최근 수능 사회·문화 등급컷의 대략적인 값 (해마다 다름, 참고용) */
@@ -154,8 +154,9 @@ const R = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 
 /* ---------- 자료 계산 드릴: 숫자는 매번 새로 만들고, 정답은 코드가 계산 ---------- */
 function numOpts(ans, cands, unit=''){
-  const set = [ans]; for (const c of cands){ const v = Math.round(c*10)/10; if (!set.includes(v) && v >= 0) set.push(v); if (set.length>=4) break; }
-  let d = 1; while (set.length < 4){ const v = Math.round((ans + d*(set.length%2?1:-1)*Math.max(2,Math.round(ans*.15)))*10)/10; if (v>=0 && !set.includes(v)) set.push(v); d++; }
+  const set = [ans]; for (const c of cands){ const v = Math.round(c*10)/10; if (!set.includes(v) && (v >= 0 || ans < 0)) set.push(v); if (set.length>=4) break; }
+  const step = Math.max(2, Math.round(Math.abs(ans)*.15)); let d = 1;
+  while (set.length < 4 && d < 80){ const k = Math.ceil(d/2)*(d%2?1:-1); const v = Math.round((ans + k*step)*10)/10; if ((v>=0 || ans<0) && !set.includes(v)) set.push(v); d++; }
   return {o: shuffle(set).map(v => v+unit), a: ans+unit};
 }
 const tbl = (head, rows) => `<table class="dt"><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map((x,i)=>i?`<td>${x}</td>`:`<th>${x}</th>`).join('')}</tr>`).join('')}</table>`;
@@ -226,6 +227,51 @@ const DRILL = {
       html: tbl(['','사전 검사','사후 검사'], [['실험 집단',b1,b1+g1],['통제 집단',b2,b2+g2]]),
       o, a, x:`실험 집단 변화 ${g1}점 − 통제 집단 변화 ${g2}점 = ${eff}점. 독립 변인(프로그램)을 처치한 쪽이 실험 집단, 성적은 종속 변인.`};
   },
+  base(){ // 비율만 있고 기준(전체 수)이 없으면 실제 수는 비교 불가
+    const a=R(10,40), b=R(10,40); const given = Math.random()<.5;
+    const pa=R(2,9)*100, pb=R(2,9)*100;
+    const na=a*pa/100, nb=b*pb/100;
+    const ans = !given ? '알 수 없다' : na>nb ? '갑국이 많다' : na<nb ? '을국이 많다' : '같다';
+    return {q:`갑국과 을국의 전체 인구 중 노인 인구 비율이 각각 ${a}%, ${b}%이다.${given?` 전체 인구는 갑국 ${pa}만 명, 을국 ${pb}만 명이다.`:''} 노인 인구 <b>수</b>는?`, html:'',
+      o: shuffle(['갑국이 많다','을국이 많다','같다','알 수 없다']), a: ans,
+      x: given ? `실제 수 = 전체 × 비율. 갑국 ${pa}×${a}% = ${na}만 명, 을국 ${pb}×${b}% = ${nb}만 명.` : '비율만 주어지고 전체 인구(기준)가 없으면 실제 크기는 비교할 수 없다. 먼저 100%의 기준이 무엇인지 확인!'};
+  },
+  rate(){ // 변화율 + 비율×전체 → 실제 수 변화
+    const t1=R(5,20)*100, t2=Math.round(t1*(1+R(-20,30)/100)/10)*10;
+    const r1=R(10,40), r2=Math.max(1, r1+R(-8,8));
+    const n1=t1*r1/100, n2=t2*r2/100;
+    const ch=Math.round((n2-n1)/n1*1000)/10;
+    const {o,a}=numOpts(ch,[r2-r1, Math.round((t2-t1)/t1*1000)/10, Math.round((r2-r1)/r1*1000)/10],'%');
+    return {q:'갑국의 전체 가구 수와 1인 가구 비율이다. 2020년 대비 2025년 <b>1인 가구 수</b>의 변화율은? (소수 첫째 자리)',
+      html: tbl(['','전체 가구(만)','1인 가구 비율(%)'], [['2020년',t1,r1],['2025년',t2,r2]]),
+      o, a, x:`1인 가구 수: 2020년 ${t1}×${r1}% = ${n1}만, 2025년 ${t2}×${r2}% = ${Math.round(n2*10)/10}만. 변화율 = (나중−처음)÷처음×100 = ${ch}%. 비율의 차이(${r2-r1}%p)와 헷갈리지 말 것.`};
+  },
+  idx(){ // 지수: 기준 시점 = 100
+    const i1=R(80,130), i2=R(80,130); const base=R(2,8)*100;
+    const k=R(0,1);
+    if(k===0){ const ans=Math.round((i2-i1)/i1*1000)/10; const {o,a}=numOpts(ans,[i2-i1, Math.round((i2-100)*10)/10, Math.round((i2-i1)/i2*1000)/10],'%');
+      return {q:`갑국 소득 지수(2015년 = 100)가 2020년 ${i1}, 2025년 ${i2}이다. 2020년 대비 2025년 소득의 변화율은? (소수 첫째 자리)`, html:'', o, a,
+        x:`지수끼리의 변화율 = (${i2}−${i1})÷${i1}×100 = ${ans}%. 지수 차이(${i2-i1})를 그대로 %로 읽으면 틀린다(기준 연도 대비일 때만 가능).`}; }
+    return {q:`갑국과 을국의 소득 지수(각국 2015년 = 100)가 2025년에 각각 ${i1}, ${i2}이다. 2025년 소득은 어느 나라가 더 많은가?`, html:'',
+      o: shuffle(['갑국','을국','같다','알 수 없다']), a:'알 수 없다',
+      x:'지수는 각자의 기준 시점 대비 상대적 크기일 뿐 — 두 나라의 기준 값이 다르면 실제 크기는 비교할 수 없다.'};
+  },
+  pop2(){ // 부양비 → 인구 구성비 역산
+    const od=R(10,60), yd=R(10,40);
+    const tot=100+od+yd, old=Math.round(od/tot*1000)/10;
+    const {o,a}=numOpts(old,[od, Math.round(od/(100+od)*1000)/10, Math.round(yd/tot*1000)/10],'%');
+    return {q:`갑국의 노년 부양비는 ${od}, 유소년 부양비는 ${yd}이다. 전체 인구 중 65세 이상 인구의 비율은? (소수 첫째 자리)`, html:'', o, a,
+      x:`15~64세 인구를 100으로 두면 65세 이상 ${od}, 0~14세 ${yd} → 전체 ${tot}. 65세 이상 비율 = ${od}÷${tot}×100 = ${old}%.`};
+  },
+  welf(){ // 두 제도 중복 수급
+    const A=R(20,60), B=R(10,40), both=R(3,Math.min(A,B)-2);
+    const none=100-A-B+both, onlyA=A-both;
+    const k=R(0,1);
+    const ans=k?none:onlyA;
+    const {o,a}=numOpts(ans,[k?100-A-B:A, k?100-A:A-B, both],'%');
+    return {q:`갑국 국민 중 A 제도 수급자는 ${A}%, B 제도 수급자는 ${B}%이고, 두 제도를 모두 받는 사람은 ${both}%이다. ${k?'<b>어느 제도도 받지 않는</b>':'<b>A 제도만</b> 받는'} 사람의 비율은?`, html:'', o, a,
+      x:`A만 = ${A}−${both} = ${onlyA}%, B만 = ${B-both}%, 둘 다 ${both}%, 아무것도 안 받음 = 100−${A}−${B}+${both} = ${none}%. 중복 수급자를 빼고 더할 것.`};
+  },
 };
 
 /* ---------- 화면 ---------- */
@@ -274,7 +320,7 @@ function start(opt){
   unlockAudio && unlockAudio();
   loadCards().then(() => {
     let q;
-    if (opt.drillOnly){ q = []; for (let i=0;i<6;i++){ const chs=[3,12,13,16], ch=pick(chs); q.push({kind:'drill', ch, d:DRILL[pick(CH[ch].drill)]()}); } }
+    if (opt.drillOnly){ q = []; for (let i=0;i<8;i++){ const chs=[3,12,13,14,16], ch=pick(chs); q.push({kind:'drill', ch, d:DRILL[pick(CH[ch].drill)]()}); } }
     else q = pickRound(opt);
     if (!q.length){ toast('풀 카드가 없어요'); return; }
     const retry = [];
