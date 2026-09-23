@@ -2,7 +2,7 @@
    - 오프라인에서도 열리게 앱 껍데기를 캐시
    - 서버(GitHub Actions)는 "깨우기" 푸시만 보낸다. 무슨 말을 할지는
      기기에 저장된 공부 기록(state.json)을 보고 여기서 고른다. */
-const VER = 'nyang-v1';
+const VER = 'nyang-v2';
 const SHELL = ['./', 'index.html', 'manifest.json', 'icons/icon-192.png', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -16,7 +16,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
-  if (u.hostname.includes('fonts.g')) {            // 폰트: 캐시 우선
+  if (u.hostname.includes('fonts.g') || u.hostname === 'i.pinimg.com') {   // 폰트·고양이 사진: 캐시 우선
     e.respondWith(caches.open('nyang-fonts').then(async c => {
       const hit = await c.match(e.request);
       if (hit) return hit;
