@@ -237,6 +237,72 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
 .toast{position:fixed;left:50%;top:calc(var(--sat) + 14px);transform:translate(-50%,-80px);background:#fff;border-radius:16px;padding:10px 16px;
   box-shadow:0 4px 0 #f1d3dd;z-index:80;transition:transform .3s;font-size:18px;max-width:90%;text-align:center}
 .toast.on{transform:translate(-50%,0)}
+
+/* ---------- 사문 ---------- */
+.smscore{text-align:center;margin-bottom:14px}
+.smscore .lbl{font-family:'Jua';font-size:17px;color:var(--soft)}
+.smscore .big{display:flex;align-items:baseline;justify-content:center;gap:10px;margin:2px 0 8px}
+.smscore .big b{font-family:'Jua';font-weight:400;font-size:56px;color:var(--pink-d);line-height:1}
+.smscore .gr{font-family:'Jua';font-size:20px;background:var(--pink-l);color:var(--pink-d);border-radius:99px;padding:3px 12px}
+.smscore .meter{height:8px;background:#fff0f4;border-radius:9px;overflow:hidden;margin:0 20px}
+.smscore .meter i{display:block;height:100%;background:var(--mint);border-radius:9px;transition:width .6s}
+.smscore .note{margin:8px 0 0}
+.smday{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0 2px;font-family:'Jua';font-size:15px;color:var(--soft)}
+.smday i{width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 2px #f6d3de}
+.smday i.on{background:var(--pink);box-shadow:none}
+.smday span{margin-left:4px}
+.btn:disabled{opacity:.45}
+.smch{display:grid;grid-template-columns:1fr 70px 38px;align-items:center;gap:8px;width:100%;background:none;border:0;padding:7px 0;text-align:left;
+  font-size:16px;border-bottom:1px dashed #f6dce4}
+.smch:last-child{border-bottom:0}
+.smch .t em{font-style:normal;font-family:'Jua';font-size:12px;color:#fff;background:#d9c6cf;border-radius:6px;padding:1px 5px;margin-right:5px}
+.smch .hot{font-family:'Jua';font-weight:400;font-size:11px;color:var(--pink-d);background:var(--pink-l);border-radius:6px;padding:1px 5px}
+.smch .tr{height:10px;background:#fff4f7;border-radius:8px;overflow:hidden}
+.smch .tr i{display:block;height:100%;border-radius:8px}
+.smch .v{text-align:right;font-size:14px;color:var(--soft)}
+#quiz{position:fixed;inset:0;background:var(--bg);z-index:35;display:none;flex-direction:column;
+  padding:calc(var(--sat) + 12px) 16px calc(var(--sab) + 16px);overflow-y:auto}
+#quiz.on{display:flex}
+.qzin{max-width:520px;width:100%;margin:0 auto;display:flex;flex-direction:column;min-height:100%}
+.qztop{display:flex;align-items:center;gap:10px}
+.qzx{border:0;background:#fff;border-radius:12px;width:38px;height:38px;font-family:'Jua';font-size:18px;box-shadow:0 2px 0 #f3d9e1;flex:none}
+.qzprog{display:flex;gap:4px;flex:1}
+.qzprog i{flex:1;height:8px;border-radius:5px;background:#fbe1e9}
+.qzprog i.ok{background:var(--mint)} .qzprog i.no{background:var(--pink)} .qzprog i.cur{background:#f5b5c7}
+.qzcat{width:44px;height:44px;border-radius:14px;border:3px solid #fff;flex:none;background:#ffe9ef center/cover no-repeat;box-shadow:0 2px 0 #f1cfd9;transition:transform .2s}
+.qzcat.yay{transform:rotate(-8deg) scale(1.08)} .qzcat.hm{transform:rotate(6deg)}
+.qztag{font-family:'Jua';font-size:14px;color:var(--soft);margin:12px 2px 6px}
+.qztime{height:5px;background:#fbe1e9;border-radius:4px;overflow:hidden;margin-bottom:12px}
+.qztime i{display:block;height:100%;width:100%;background:var(--butter);border-radius:4px}
+.qztime i.late{background:#e9dde2}
+.qzq{background:#fff;border-radius:var(--r);padding:18px;box-shadow:0 3px 0 #f5dbe3;font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;font-weight:500;font-size:18.5px;line-height:1.55;letter-spacing:-.2px;-webkit-user-select:text;user-select:text}
+.qzq p{margin:0}
+.blank{display:inline-block;min-width:64px;border-bottom:2.5px solid var(--pink);margin:0 3px;text-align:center;font-family:'Jua';font-size:15px;color:var(--pink-d);vertical-align:2px}
+.qzq .qzlead{font-family:'Jua';font-size:16px;color:var(--soft);margin-bottom:6px}
+.qzq .qzlead+p{margin-top:0}
+.qzq table.dt{border-collapse:collapse;margin:10px 0;width:100%;font-size:16px;text-align:center}
+.qzq .dt th,.qzq .dt td{border:1.5px solid #f3d3dd;padding:6px 4px}
+.qzq .dt th{background:#fff6f8;font-family:'Jua';font-weight:400}
+.qzq table+p{margin-top:8px}
+.qzo{display:grid;gap:9px;margin-top:14px}
+.qzo.ox{grid-template-columns:1fr 1fr}
+.qzb{border:0;border-radius:18px;background:#fff;padding:14px 14px;font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;font-weight:500;font-size:17px;text-align:left;box-shadow:0 4px 0 #efd5dd;line-height:1.3;
+  transition:transform .08s}
+.qzb:active{transform:translateY(3px)}
+.qzo.ox .qzb{text-align:center;padding:18px 0}
+.oxo,.oxx{font-family:'Jua';font-size:40px;line-height:1}
+.oxo{color:#5fc1a1} .oxx{color:var(--pink-d)}
+.qzb.right{background:var(--mint-l);box-shadow:0 4px 0 #8fdcc2;outline:3px solid #5fc1a1}
+.qzb.wrong{background:#ffe3ea;box-shadow:0 4px 0 #f6b3c5;outline:3px solid var(--pink)}
+.qzb:disabled{color:inherit}
+.qzb .bn{font-style:normal;color:var(--pink-d);margin-right:4px}.qzb .sp{display:inline-block;width:14px}
+.qzfb{display:none;margin-top:14px;border-radius:var(--r);padding:14px 16px;background:#fff;box-shadow:0 3px 0 #f5dbe3}
+.qzfb.on{display:block;animation:up .25s}
+.qzfb.ok{background:#effbf6} .qzfb.no{background:#fff1f5}
+.qzfb .h{font-family:'Jua';font-size:20px;margin-bottom:4px}
+.qzfb.ok .h{color:#3fa585} .qzfb.no .h{color:var(--pink-d)}
+.qzfb .x{font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;font-size:16px;line-height:1.5;margin-bottom:6px}
+.qzfb .s{font-size:13px;color:var(--soft);margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -266,6 +332,12 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
     </div>
     <div class="weekpaws" id="weekpaws"></div>
     <button class="link" id="b-rest"></button>
+  </section>
+
+  <!-- 사문 -->
+  <section class="view" id="v-sm">
+    <h2>사문 개념 훈련</h2>
+    <div id="sm-body"></div>
   </section>
 
   <!-- 기록 -->
@@ -320,6 +392,7 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
 
 <nav class="tabs">
   <button class="tab on" data-v="home"><svg viewBox="0 0 24 24"><use href="#i-paw"/></svg>홈</button>
+  <button class="tab" data-v="sm"><svg viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5a1.5 1.5 0 0 0 0 3H20v1H6.5A2.5 2.5 0 0 1 4 19.5v-15zM8 6v2h9V6H8zm0 4v2h6v-2H8z"/></svg>사문</button>
   <button class="tab" data-v="rec"><svg viewBox="0 0 24 24"><path d="M7 2v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm-2 7h14v10H5V9z"/></svg>기록</button>
   <button class="tab" data-v="deco"><svg viewBox="0 0 24 24"><path d="M12 11.2 4.5 6.8C3.3 6.1 2 7 2 8.3v7.4c0 1.3 1.3 2.2 2.5 1.5L12 12.8l7.5 4.4c1.2.7 2.5-.2 2.5-1.5V8.3c0-1.3-1.3-2.2-2.5-1.5L12 11.2z"/><circle cx="12" cy="12" r="2.6"/></svg>꾸미기</button>
   <button class="tab" data-v="set"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.7 7.7 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.5 7.5 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.5 7.5 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.7 7.7 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5-2.2-1.6zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>설정</button>
@@ -340,6 +413,16 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
     <button class="btn sub" id="f-end" style="color:#fff">다 했어!</button>
   </div>
 </div>
+
+<!-- 사문 퀴즈 -->
+<div id="quiz"><div class="qzin">
+  <div class="qztop"><button class="qzx" id="qz-x" aria-label="그만">✕</button><div class="qzprog" id="qz-prog"></div><div class="qzcat" id="qz-cat"></div></div>
+  <div class="qztag" id="qz-tag"></div>
+  <div class="qztime"><i id="qz-time"></i></div>
+  <div class="qzq" id="qz-q"></div>
+  <div class="qzo" id="qz-o"></div>
+  <div class="qzfb" id="qz-fb"></div>
+</div></div>
 
 <!-- 시트 -->
 <div class="dim" id="sheetDim"><div class="sheet" id="sheet"></div></div>
@@ -366,6 +449,7 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
   </defs>
 </svg>
 
+<script src="samun.js"></script>
 <script>
 'use strict';
 /* =========================================================
@@ -852,7 +936,7 @@ function syncSW(){
 function show(v){document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
   document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('on',e.dataset.v===v));window.scrollTo(0,0);renderAll()}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
-function renderAll(){renderHome();if($('#v-rec').classList.contains('on'))renderRec();if($('#v-deco').classList.contains('on'))renderDeco();if($('#v-set').classList.contains('on'))renderSet()}
+function renderAll(){renderHome();if($('#v-sm').classList.contains('on'))SM.render();if($('#v-rec').classList.contains('on'))renderRec();if($('#v-deco').classList.contains('on'))renderDeco();if($('#v-set').classList.contains('on'))renderSet()}
 
 $('#b-start').onclick=()=>subjectSheet(durationSheet);
 $('#b-five').onclick=()=>subjectSheet(s=>{closeSheet();startFocus(s,5)});
@@ -860,6 +944,7 @@ $('#b-log').onclick=logSheet;
 $('#b-rest').onclick=restDay;
 $('#f-pause').onclick=togglePause;
 $('#f-end').onclick=endFocus;
+$('#qz-x').onclick=()=>SM.quit();
 
 /* ---------- 시작 ---------- */
 function boot(){
