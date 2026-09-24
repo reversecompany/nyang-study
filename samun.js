@@ -38,10 +38,22 @@ let CARDS = null, BYID = {}, loading = null;
 function loadCards(){
   if (CARDS) return Promise.resolve(CARDS);
   if (loading) return loading;
-  loading = fetch('samun_cards.json').then(r => r.json()).then(a => {
-    CARDS = a; a.forEach(c => BYID[c.id] = c); return a;
+  loading = fetch('samun_cards.json').then(r => r.json()).then(async a => {
+    CARDS = a; a.forEach(c => BYID[c.id] = c);
+    await migrateIds();
+    return a;
   }).catch(e => { loading = null; throw e; });
   return loading;
+}
+
+/* 카드 번호가 바뀐 적이 있으면(2026-09-24 수특 카드 번호 고정) 예전 기록을 새 번호로 옮긴다 */
+async function migrateIds(){
+  const s = st(); if (s.mig >= 1) return;
+  try{
+    const m = await fetch('samun_idmap.json').then(r => r.json());
+    for (const [o, n] of Object.entries(m)) if (s.c[o] && !BYID[o]){ if (!s.c[n]) s.c[n] = s.c[o]; delete s.c[o]; }
+    s.mig = 1; save();
+  }catch(e){}
 }
 
 /* ---------- 기록 ---------- */
@@ -127,7 +139,7 @@ function pickRound(opt={}){
     }
     return out;
   };
-  const drills = opt.wrong ? 0 : pickDrills(opt.ch);
+  const drills = opt.wrong ? [] : pickDrills(opt.ch);
   let slots = PER_ROUND - drills.length;
   let q = [];
   const nDue = opt.wrong ? slots : Math.min(due.length, Math.max(slots - NEW_PER_ROUND, Math.ceil(slots*.6)));
@@ -283,7 +295,7 @@ function render(){
   if (!CARDS){ box.innerHTML = '<div class="card">카드 불러오는 중…</div>';
     loadCards().then(render).catch(()=>{ box.innerHTML = '<div class="card">카드를 못 불러왔어요. 인터넷 연결을 확인해 주세요.</div>'; }); return; }
   const s = st(), P = predict(), today = dayOf(), rounds = s.rounds[today] || 0;
-  const wrongN = Object.values(s.c).filter(k => !k.ok).length;
+  const wrongN = Object.keys(s.c).filter(id => BYID[id] && !s.c[id].ok).length;
   const dueN = CARDS.filter(c => s.c[c.id] && s.c[c.id].due <= now()).length;
   const seenN = Object.keys(s.c).length;
   const prev = s.hist.length ? s.hist[s.hist.length-1] : null;
@@ -328,7 +340,7 @@ function start(opt){
     $('#quiz').classList.add('on'); document.body.style.overflow='hidden';
     catPic('normal'); $('#qz-cat').className='qzcat';
     showQ();
-  }).catch(() => toast('카드를 못 불러왔어요'));
+  }).catch(e => { console.error(e); toast(CARDS ? '문제를 고르다 오류가 났어요: ' + (e && e.message || e) : '카드를 못 불러왔어요. 인터넷 연결을 확인해 주세요'); });
 }
 
 function catPic(kind){ try{ $('#qz-cat').style.backgroundImage = `url(${photoUrl(pick(PHOTOS[kind]))})`; }catch(e){} }
@@ -359,13 +371,15 @@ function showQ(){
   const lab = o => multi && o.includes(', ') ? o.split(', ').map((p,i)=>`<em class="bn">${'①②③'[i]}</em>${esc(p)}`).join('<span class="sp"></span>') : esc(o);
   box.innerHTML = opts.map(o => `<button class="qzb" data-v="${esc(o)}">${o==='O'?'<span class="oxo">O</span>':o==='X'?'<span class="oxx">X</span>':lab(o)}</button>`).join('');
   box.querySelectorAll('.qzb').forEach(b => b.onclick = () => answer(b.dataset.v, b));
+  box.insertAdjacentHTML('beforeend', '<button class="qzdk" id="qz-dk">몰라요</button>');
+  $('#qz-dk').onclick = () => answer(null, null, true);
   it.t0 = now();
   const bar = $('#qz-time'); bar.style.transition='none'; bar.style.width='100%'; bar.classList.remove('late');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.transition=`width ${it.lim}ms linear`; bar.style.width='0%'; }));
   clearTimeout(timer); timer = setTimeout(()=>bar.classList.add('late'), it.lim);
 }
 
-function answer(v, btn){
+function answer(v, btn, dunno){
   const g = game, it = g.q[g.i]; if (it.done) return; it.done = true;
   clearTimeout(timer);
   const ms = now() - it.t0;
@@ -373,19 +387,20 @@ function answer(v, btn){
   if (it.kind === 'card'){
     const c = it.c;
     right = c.t === 'ox' ? (c.a ? 'O' : 'X') : c.a;
-    ok = v === right;
+    ok = !dunno && v === right;
     const r = grade(c, ok, ms); it.fast = r.fast;
     if (c.t === 'ox') exp = c.a ? '옳은 문장이에요.' + (c.x ? '<br>' + esc(c.x) : '') : (c.x ? `틀린 문장 → <b>${esc(c.x)}</b>` : '틀린 문장이에요.');
     else exp = (ok ? '' : `정답: <b>${esc(c.a)}</b>`) + (c.x ? (ok ? '' : '<br>') + esc(c.x) : '');
     src = c.s.join(' · ');
     if (!ok) g.retry.push(c);
   } else {
-    right = it.d.a; ok = v === right; it.fast = ok && ms <= it.lim;
+    right = it.d.a; ok = !dunno && v === right; it.fast = ok && ms <= it.lim;
     push(st().r, 'd'+it.ch, ok ? 1 : 0, 30);
     exp = (ok ? '' : `정답: <b>${esc(right)}</b><br>`) + it.d.x;
     src = '자료 계산 (숫자는 매번 새로 만들어요)';
   }
-  g.res[g.i] = {ok, fast: it.fast};
+  g.res[g.i] = {ok, fast: it.fast, dk: !!dunno};
+  const dk = $('#qz-dk'); if (dk) dk.remove();
   $('#qz-o').querySelectorAll('.qzb').forEach(b => {
     if (b.dataset.v === right) b.classList.add('right');
     else if (b === btn) b.classList.add('wrong');
@@ -393,9 +408,9 @@ function answer(v, btn){
   });
   $('#qz-time').style.transition='none';
   const fb = $('#qz-fb');
-  const head = ok ? (it.fast ? pick(['바로 떠올렸다!','번개 인출!','완벽해!','이게 실력이지']) : pick(['정답! 조금만 더 빨리','맞았어, 다음엔 더 빨리 떠올려 보자']))
+  const head = dunno ? pick(['솔직하게 모른다고 한 거 멋있어. 지금 외우자','모르는 걸 아는 게 공부의 시작이야','좋아, 이건 곧 다시 물어볼게']) : ok ? (it.fast ? pick(['바로 떠올렸다!','번개 인출!','완벽해!','이게 실력이지']) : pick(['정답! 조금만 더 빨리','맞았어, 다음엔 더 빨리 떠올려 보자']))
                   : pick(['괜찮아, 지금 외우면 돼','여기서 틀린 게 수능에서 맞는 거야','이거 곧 다시 나올 거야']);
-  fb.className = 'qzfb on ' + (ok ? 'ok' : 'no');
+  fb.className = 'qzfb on ' + (ok ? 'ok' : dunno ? 'dk' : 'no');
   fb.innerHTML = `<div class="h">${head}</div>${exp?`<div class="x">${exp}</div>`:''}<div class="s">${esc(src)}</div>
     <button class="btn ${ok?'mint':''}" id="qz-next" style="${ok?'color:var(--ink)':''}">${g.i+1<g.q.length?'다음':'결과 보기'}</button>`;
   $('#qz-next').onclick = next;
@@ -425,7 +440,7 @@ function finish(){
   const g = game; game = null;
   $('#quiz').classList.remove('on'); document.body.style.overflow='';
   const main = g.res.slice(0, g.q.filter(x=>!x.again).length);
-  const ok = main.filter(r=>r.ok).length, fast = main.filter(r=>r.fast).length, n = main.length;
+  const ok = main.filter(r=>r.ok).length, fast = main.filter(r=>r.fast).length, dk = main.filter(r=>r.dk).length, n = main.length;
   const s = st(), d = dayOf();
   s.rounds[d] = (s.rounds[d]||0) + 1;
   const P = predict();
@@ -442,7 +457,7 @@ function finish(){
              : pick(['틀린 만큼 외운 거야. 한 판 더 하면 확 달라져','괜찮아, 처음은 원래 이래. {cat이} 옆에 있을게']);
   const after = studyDays().length;
   openModal(`${miniCat()}<p class="rewardnum">${ok} / ${n}</p>
-    <p class="note" style="margin:-4px 0 8px">바로 떠올린 것 ${fast}개 · 츄르 +${churu}</p>
+    <p class="note" style="margin:-4px 0 8px">바로 떠올린 것 ${fast}개${dk?` · 몰라요 ${dk}개`:''} · 츄르 +${churu}</p>
     <p class="line">${fmt(line)}</p>
     <p class="note">예상 점수 <b>${P.score}점</b> (${P.grade}등급)${diff > 0 ? ` · <b style="color:#3fa585">+${diff}</b>` : ''}</p>
     ${after>before?`<p class="note">오늘 발자국 도장 쾅! 함께한 날 ${after}일째</p>`:''}
