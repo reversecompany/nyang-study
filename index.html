@@ -23,6 +23,7 @@
   --mint:#8fdcc2; --mint-l:#dcf6ec; --butter:#ffd98a; --butter-l:#fff2cf;
   --lav:#c9b6ff; --lav-l:#efe8ff; --sky:#9fd3f0;
   --fur:#fff4e6; --p1:#f6b26b; --p2:#f6b26b; --tail:#f6b26b;
+  --room-wall:transparent; --room-floor1:#ffe6ee; --room-floor2:#ffdbe6; --room-border:#ffd0de; --room-rug:#fff;
   --r:22px;
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
 }
@@ -49,11 +50,11 @@ button,input{font-family:inherit;color:inherit}
 
 /* ---------- 무대 (고양이가 걷는 곳) ---------- */
 .stage{position:relative;height:210px;margin:12px -16px 4px;overflow:hidden}
-.stage .wall{position:absolute;inset:0 0 46px 0}
+.stage .wall{position:absolute;inset:0 0 46px 0;background:var(--room-wall);transition:background .4s}
 .stage .floor{position:absolute;left:0;right:0;bottom:0;height:58px;
-  background:repeating-linear-gradient(90deg,#ffe6ee 0 38px,#ffdbe6 38px 76px);border-top:3px solid #ffd0de}
+  background:repeating-linear-gradient(90deg,var(--room-floor1) 0 38px,var(--room-floor2) 38px 76px);border-top:3px solid var(--room-border);transition:background .4s,border-color .4s}
 .stage .rug{position:absolute;left:50%;bottom:10px;width:62%;height:26px;transform:translateX(-50%);
-  border-radius:50%;background:#fff;opacity:.55}
+  border-radius:50%;background:var(--room-rug);opacity:.55;transition:background .4s}
 .win{position:absolute;right:26px;top:14px;width:78px;height:64px;border-radius:14px;background:linear-gradient(#cfeafe,#eaf6ff);
   border:4px solid #fff;box-shadow:0 2px 0 #f3d4de}
 .win:before,.win:after{content:"";position:absolute;background:#fff}
@@ -122,9 +123,13 @@ button,input{font-family:inherit;color:inherit}
 .w-crown .pacc.crown{display:block;left:50%;top:-24px;width:40px;margin-left:-20px}
 .w-bell .pacc.bell{display:block;left:50%;bottom:-12px;width:70px;margin-left:-35px}
 .w-glasses .pacc.glasses{display:block;left:-14px;bottom:10px;width:46px;transform:rotate(-14deg)}
+.w-headband .pacc.headband{display:block;left:50%;top:-10px;width:46px;margin-left:-23px}
+.w-bowtie .pacc.bowtie{display:block;left:50%;bottom:-6px;width:34px;margin-left:-17px}
+.w-scarf .pacc.scarf{display:block;left:50%;bottom:-14px;width:82px;margin-left:-41px}
 .mini .ph{display:block;position:relative;left:0;margin:0 auto;bottom:0}
 .looks{display:flex;gap:10px;margin-bottom:18px}
-.w-bow .acc-bow,.w-bell .acc-bell,.w-flower .acc-flower,.w-glasses .acc-glasses,.w-crown .acc-crown{display:inline}
+.w-bow .acc-bow,.w-bell .acc-bell,.w-flower .acc-flower,.w-glasses .acc-glasses,.w-crown .acc-crown,
+.w-headband .acc-headband,.w-bowtie .acc-bowtie,.w-scarf .acc-scarf{display:inline}
 
 /* ---------- 버튼 ---------- */
 .btn{display:block;width:100%;border:0;border-radius:20px;padding:15px 12px;font-family:'Jua';font-size:22px;cursor:pointer;
@@ -222,6 +227,30 @@ h3{font-family:'Jua';font-size:19px;margin:0 0 10px;font-weight:400}
 .accb.on{outline:3px solid var(--pink)}
 .accb.on:after{content:"✓";position:absolute;top:6px;right:8px;width:19px;height:19px;border-radius:50%;
   background:var(--pink);color:#fff;font-size:12px;line-height:19px;font-family:'Jua'}
+
+/* ---------- 상점 ---------- */
+.shopbar{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px}
+.shopbar .bal{display:flex;align-items:center;gap:5px;background:var(--butter-l);border-radius:99px;padding:6px 14px;font-family:'Jua';font-size:16px;color:#a97a1f}
+.shopbar .bal svg{width:18px;height:18px}
+.shop-tabs{display:flex;gap:8px;margin-bottom:12px}
+.shop-tab{flex:1;border:0;border-radius:16px;padding:10px 4px;background:#fff;box-shadow:0 3px 0 #f5dbe3;font-family:'Jua';font-size:15px;color:var(--soft)}
+.shop-tab.on{background:var(--pink);color:#fff;box-shadow:0 3px 0 var(--pink-d)}
+.cost{display:flex;align-items:center;justify-content:center;gap:3px;font-family:'Jua';font-size:13px;color:#a97a1f;margin-top:2px}
+.cost svg{width:12px;height:12px;flex:none}
+.accb.buy{background:#fffaf0}
+.accb.buy .accplate{background:var(--pc,#fff2cf)}
+.accb.cant{opacity:.55}
+.rooms{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px}
+.roomb{border:0;border-radius:18px;background:#fff;padding:0 0 10px;box-shadow:0 3px 0 #f5dbe3;font-family:'Jua';font-size:14px;position:relative;overflow:hidden;text-align:center}
+.roomb .swatch{height:56px;display:flex}
+.roomb .swatch i{flex:1}
+.roomb .rn{display:block;margin-top:8px}
+.roomb .cost{justify-content:center;margin-top:2px}
+.roomb .swatch{background:#fff}
+.roomb.on{outline:3px solid var(--pink)}
+.roomb.on:after{content:"✓";position:absolute;top:6px;right:8px;width:19px;height:19px;border-radius:50%;
+  background:var(--pink);color:#fff;font-size:12px;line-height:19px;font-family:'Jua'}
+.roomb.cant{opacity:.55}
 
 /* ---------- 설정 ---------- */
 .field{margin-bottom:14px}
@@ -378,6 +407,10 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
     <div class="furs" id="furs"></div></div>
     <h3>선물 상자 <span class="note">— 함께한 날이 쌓이면 열려요</span></h3>
     <div class="accs" id="accs"></div>
+    <div class="shopbar"><h3 style="margin:0">상점</h3><div class="bal"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg><span id="shopBal">0</span></div></div>
+    <div class="accs" id="shopAcc"></div>
+    <h3 style="margin-top:18px">방 꾸미기</h3>
+    <div class="rooms" id="shopRoom"></div>
   </section>
 
   <!-- 설정 -->
@@ -482,25 +515,50 @@ const FURS={
   gray:  {n:'회색', fur:'#eceaf2',p1:'#b9b8cc',p2:'#b9b8cc',tail:'#b9b8cc'},
   white: {n:'하양', fur:'#ffffff',p1:'#ffffff',p2:'#ffffff',tail:'#ffffff'},
 };
-const ACCS=[
+const ACCS=[   // 함께한 날이 쌓이면 받는 선물
   {id:'bow',    n:'리본',     need:1,  pc:'#ffe0e9'},
   {id:'bell',   n:'방울 목걸이', need:3,  pc:'#fff2cf'},
   {id:'flower', n:'꽃 핀',    need:5,  pc:'#dcf6ec'},
   {id:'glasses',n:'공부 안경', need:10, pc:'#e8f2fb'},
   {id:'crown',  n:'왕관',     need:20, pc:'#fff2cf', top:1},
 ];
+const SHOP_ACC=[   // 츄르로 사는 아이템
+  {id:'headband',n:'머리띠',    cost:15, pc:'#ffe3ea'},
+  {id:'bowtie',  n:'나비넥타이', cost:25, pc:'#e8f2fb'},
+  {id:'scarf',   n:'목도리',    cost:35, pc:'#fff2cf'},
+];
+const ROOMS=[   // 츄르로 사는 방 테마
+  {id:'basic',   n:'기본 방',   cost:0,  wall:'transparent', f1:'#ffe6ee', f2:'#ffdbe6', bd:'#ffd0de', rug:'#ffffff'},
+  {id:'mint',    n:'민트 방',   cost:20, wall:'#eafaf3',      f1:'#dff5ec', f2:'#cdeee0', bd:'#b9e3cf', rug:'#ffffff'},
+  {id:'lavender',n:'라벤더 방', cost:30, wall:'#f2eeff',      f1:'#ece4ff', f2:'#ddd0fb', bd:'#cdbdf0', rug:'#ffffff'},
+  {id:'night',   n:'밤하늘 방', cost:45, wall:'#26234a',      f1:'#2d2a57', f2:'#242047', bd:'#3c3776', rug:'#3a3568'},
+];
 
-/* ---------- 사진 냥이: Pinterest에서 고른 치즈냥이들 (기분별) ---------- */
+/* ---------- 사진 냥이: 지연이의 진짜 고양이(레몬) 사진 + 부족한 상황용 Pinterest 치즈냥이 ---------- */
 const PIN='https://i.pinimg.com/474x/';
-const PHOTOS={
+/* 레몬 실제 사진(img/lemon/) — 기분별로 분류. 우리 고양이라 픽 확률을 훨씬 높게 준다(REP배). */
+const LEMON={
+  happy:['l00','l04','l18','l19','l20','l24','l25','l26','l27','l29','l32'],
+  normal:['l01','l06','l07','l08','l11','l13','l21','l22','l31'],
+  tired:['l12','l14','l15','l17','l23'],
+  sleep:['l02','l03','l09'],
+  walk:['l05','l10','l16','l28','l30'],
+};
+const PINTEREST={
   happy:['a9/15/5a/a9155a0dd5459fc7b21ca56b8a7e9b72','6c/2b/5f/6c2b5f8a3392acd7c1de08e43c56d72f','72/74/fb/7274fb13e99d6e3920a6ee9bf9e42e9f','67/3c/1c/673c1cd4fdd120625f60805d43ed386a','ee/20/6e/ee206e31485ddca857415fffdedd1fd0','45/41/4e/45414e13115bae0a7b4e65419576fb92','fc/9c/51/fc9c51ce384762b2a7eeb77a4d652fc2'],
   normal:['1c/bd/f1/1cbdf169fed550d0d82305164cdc09aa','27/25/b4/2725b424267f3ae177bf8fa425517d29','cd/69/c6/cd69c6f3502cf7abae3cb4447d2a7fd0','4b/21/e1/4b21e1ec291318d33baed8b74c4dd785','69/9d/0b/699d0b2e1c5c1b93384fe1476aa41d0f'],
   tired:['c2/49/67/c2496783a903aca95f6b3c160db1f523','0d/a8/59/0da85976d654733c17b5bcfa08fef01a','cb/23/66/cb2366a8a7d0ff47258c2e5e6b1ae5aa','2c/7c/94/2c7c94173ac7e04d0f4b15db497b4dd0'],
   sleep:['58/26/a2/5826a2950feb322041a429b530b8858e','b1/ba/f8/b1baf8b0c88a8d0051ef65c32ca89b1e','76/2b/a6/762ba6a4b754cfdd5ad8fb43e553d473'],
   walk:['f5/2a/b5/f52ab55aabcd662b6402bc74cfb71446','b9/20/c2/b920c242be01f63aa12724e46108ac77','d2/5e/31/d25e31ca938a33549d591964730618d0','ab/da/c5/abdac55cf026974d5ae0d3d240d3475c','ec/70/db/ec70dbafd5e17a8b14273da157fa0f61'],
 };
+const REP=3; // 레몬 사진 하나가 핀터레스트 사진 REP개만큼의 확률을 갖게(= 레몬이 훨씬 자주 나옴)
+const PHOTOS={};
+for(const k of Object.keys(LEMON)){
+  const lemon=Array(REP).fill(LEMON[k]).flat();
+  PHOTOS[k]=[...lemon,...PINTEREST[k]];
+}
 PHOTOS.rest=PHOTOS.sleep;
-const photoUrl=id=>PIN+id+'.jpg';
+const photoUrl=id=>id[0]==='l'&&/^l\d\d$/.test(id)?`img/lemon/${id}.jpg`:PIN+id+'.jpg';
 Object.values(PHOTOS).flat().forEach(id=>{const i=new Image();i.src=photoUrl(id)});
 const PACC={
   bow:'<svg viewBox="-14 -10 28 20"><path d="M0 0 L-12 -8 L-12 8 Z M0 0 L12 -8 L12 8 Z" fill="#ff7aa2" stroke="#5a4646" stroke-width="1.8" stroke-linejoin="round"/><circle r="3.6" fill="#ff5c8a" stroke="#5a4646" stroke-width="1.6"/></svg>',
@@ -508,15 +566,19 @@ const PACC={
   crown:'<svg viewBox="-13 -15 26 16"><path d="M-12 0 L-12 -11 L-6 -4.5 L0 -14 L6 -4.5 L12 -11 L12 0 Z" fill="#ffd35c" stroke="#5a4646" stroke-width="1.8" stroke-linejoin="round"/><circle cx="0" cy="-4" r="2" fill="#ff7aa2"/></svg>',
   bell:'<svg viewBox="-23 17 46 19"><path d="M-20 21 Q0 32 20 21" fill="none" stroke="#ff6b8b" stroke-width="5" stroke-linecap="round"/><circle cx="0" cy="29" r="5.2" fill="#ffd35c" stroke="#5a4646" stroke-width="1.8"/><path d="M-2.5 30.5h5" stroke="#5a4646" stroke-width="1.4"/></svg>',
   glasses:'<svg viewBox="-21 -8 42 20" fill="rgba(255,255,255,.35)" stroke="#6b4f4f" stroke-width="2.3"><circle cx="-11" cy="2" r="8.6"/><circle cx="11" cy="2" r="8.6"/><path d="M-2.4 1 Q0 -1.2 2.4 1" fill="none"/></svg>',
+  headband:'<svg viewBox="-18 -12 36 16"><path d="M-14 4 Q0 -9 14 4" fill="none" stroke="#ff9dc0" stroke-width="6" stroke-linecap="round"/><circle cx="10" cy="0" r="3.2" fill="#ff5c8a" stroke="#5a4646" stroke-width="1.4"/></svg>',
+  bowtie:'<svg viewBox="-13 -8 26 16"><path d="M0 0 L-11 -6 L-11 6 Z M0 0 L11 -6 L11 6 Z" fill="#6aa9ff" stroke="#5a4646" stroke-width="1.7" stroke-linejoin="round"/><rect x="-3" y="-3" width="6" height="6" rx="1.4" fill="#4d84e0" stroke="#5a4646" stroke-width="1.3"/></svg>',
+  scarf:'<svg viewBox="-22 -6 44 26"><path d="M-18 -2 Q0 8 18 -2 L18 4 Q0 14 -18 4 Z" fill="#8fdcc2" stroke="#5a4646" stroke-width="1.7" stroke-linejoin="round"/><rect x="-4" y="8" width="8" height="13" rx="2.2" fill="#6bc6a5" stroke="#5a4646" stroke-width="1.5"/></svg>',
 };
 function stickerHTML(kind){const id=pick(PHOTOS[kind]||PHOTOS.happy);
   return `<div class="ph"><div class="pimg" style="background-image:url(${photoUrl(id)})"></div>${Object.entries(PACC).map(([k,v])=>`<div class="pacc ${k}">${v}</div>`).join('')}</div>`}
 
 /* ---------- 저장 ---------- */
 let S=load();
+function defaultsS(){return {v:1,me:'',cat:'',fur:'cheese',look:'photo',dday:defaultDday(),sessions:[],rests:[],churu:0,wear:[],seenAcc:[],run:null,push:null,created:Date.now(),bought:[],room:'basic',roomBought:['basic']};}
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.v===1) return {look:'photo',...s};}catch(e){}
-  return {v:1,me:'',cat:'',fur:'cheese',look:'photo',dday:defaultDday(),sessions:[],rests:[],churu:0,wear:[],seenAcc:[],run:null,push:null,created:Date.now()};
+  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.v===1) return {...defaultsS(),...s};}catch(e){}
+  return defaultsS();
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} syncSW();}
 function defaultDday(){const y=new Date().getMonth()>=11?new Date().getFullYear()+1:new Date().getFullYear();return y+'-11-19'}
@@ -603,6 +665,9 @@ function headSVG(){
   <g class="acc acc-flower" transform="translate(-19 -22)"><g fill="#ffc9da" stroke="#5a4646" stroke-width="1.3"><circle cx="0" cy="-5" r="4.3"/><circle cx="4.8" cy="-1.5" r="4.3"/><circle cx="3" cy="4" r="4.3"/><circle cx="-3" cy="4" r="4.3"/><circle cx="-4.8" cy="-1.5" r="4.3"/></g><circle r="3" fill="#ffd35c" stroke="#5a4646" stroke-width="1.2"/></g>
   <g class="acc acc-glasses" fill="rgba(255,255,255,.25)" stroke="#6b4f4f" stroke-width="2.3"><circle cx="-11" cy="2" r="8.6"/><circle cx="11" cy="2" r="8.6"/><path d="M-2.4 1 Q0 -1.2 2.4 1" fill="none"/></g>
   <g class="acc acc-crown" transform="translate(0 -26)"><path d="M-12 0 L-12 -11 L-6 -4.5 L0 -14 L6 -4.5 L12 -11 L12 0 Z" fill="#ffd35c" stroke="#5a4646" stroke-width="1.8" stroke-linejoin="round"/><circle cx="0" cy="-4" r="2" fill="#ff7aa2"/></g>
+  <g class="acc acc-headband" transform="translate(0 -30)"><path d="M-14 4 Q0 -9 14 4" fill="none" stroke="#ff9dc0" stroke-width="6" stroke-linecap="round"/><circle cx="10" cy="0" r="3" fill="#ff5c8a" stroke="#5a4646" stroke-width="1.4"/></g>
+  <g class="acc acc-bowtie" transform="translate(0 19)"><path d="M0 0 L-9 -5 L-9 5 Z M0 0 L9 -5 L9 5 Z" fill="#6aa9ff" stroke="#5a4646" stroke-width="1.6" stroke-linejoin="round"/><rect x="-2.5" y="-2.5" width="5" height="5" rx="1.2" fill="#4d84e0" stroke="#5a4646" stroke-width="1.2"/></g>
+  <g class="acc acc-scarf" transform="translate(0 24)"><path d="M-16 -3 Q0 6 16 -3 L16 3 Q0 12 -16 3 Z" fill="#8fdcc2" stroke="#5a4646" stroke-width="1.6" stroke-linejoin="round"/><rect x="-3" y="6" width="6" height="11" rx="2" fill="#6bc6a5" stroke="#5a4646" stroke-width="1.4"/></g>
 </g>`}
 function catSVG(){
   const b='b'+(++uid), b2='b'+(++uid);
@@ -641,7 +706,10 @@ const st=document.createElement('style');st.textContent='@keyframes breath{0%,10
 
 function applyFur(){const f=FURS[S.fur]||FURS.cheese;const r=document.documentElement.style;
   r.setProperty('--fur',f.fur);r.setProperty('--p1',f.p1);r.setProperty('--p2',f.p2);r.setProperty('--tail',f.tail)}
-function wearClasses(el){ACCS.forEach(a=>el.classList.toggle('w-'+a.id,S.wear.includes(a.id)))}
+function applyRoom(){const rm=ROOMS.find(x=>x.id===S.room)||ROOMS[0];const r=document.documentElement.style;
+  r.setProperty('--room-wall',rm.wall);r.setProperty('--room-floor1',rm.f1);r.setProperty('--room-floor2',rm.f2);
+  r.setProperty('--room-border',rm.bd);r.setProperty('--room-rug',rm.rug)}
+function wearClasses(el){[...ACCS,...SHOP_ACC].forEach(a=>el.classList.toggle('w-'+a.id,S.wear.includes(a.id)))}
 
 /* ---------- 걸어다니는 고양이 ---------- */
 class Walker{
@@ -883,6 +951,9 @@ function badgeIcon(id){
     flower:`<svg viewBox="-24 -24 48 48"><g fill="#ffc9da" ${s} stroke-width="1.4"><circle cy="-8" r="6.2"/><circle cx="7.6" cy="-2.4" r="6.2"/><circle cx="4.8" cy="6.5" r="6.2"/><circle cx="-4.8" cy="6.5" r="6.2"/><circle cx="-7.6" cy="-2.4" r="6.2"/></g><circle r="4" fill="#ffd35c" ${s} stroke-width="1.3"/></svg>`,
     glasses:`<svg viewBox="-24 -24 48 48"><g fill="rgba(255,255,255,.4)" stroke="#5a4646" stroke-width="2.4"><circle cx="-11" r="9.5"/><circle cx="11" r="9.5"/><path d="M-2.4 -1 Q0 -3.2 2.4 -1" fill="none"/><path d="M-20.5 -1h5M20.5 -1h-5" stroke-linecap="round"/></g></svg>`,
     crown:`<svg viewBox="-24 -24 48 48"><path d="M-15 8 L-15 -6 L-7 1 L0 -13 L7 1 L15 -6 L15 8 Z" fill="#ffd35c" ${s}/><circle cy="-3" r="2.6" fill="#ff7aa2" ${s} stroke-width="1.4"/></svg>`,
+    headband:`<svg viewBox="-24 -24 48 48"><path d="M-17 5 Q0 -12 17 5" fill="none" stroke="#ff9dc0" stroke-width="7" stroke-linecap="round"/><circle cx="12" r="3.6" fill="#ff5c8a" ${s} stroke-width="1.4"/></svg>`,
+    bowtie:`<svg viewBox="-24 -24 48 48"><path d="M0 0 L-14 -8 L-14 8 Z M0 0 L14 -8 L14 8 Z" fill="#6aa9ff" ${s}/><rect x="-3.6" y="-3.6" width="7.2" height="7.2" rx="1.6" fill="#4d84e0" ${s} stroke-width="1.4"/></svg>`,
+    scarf:`<svg viewBox="-24 -24 48 48"><path d="M-16 -6 Q0 4 16 -6 L16 1 Q0 11 -16 1 Z" fill="#8fdcc2" ${s}/><rect x="-4" y="4" width="8" height="13" rx="2.4" fill="#6bc6a5" ${s} stroke-width="1.4"/></svg>`,
   }[id]||accIcon(id);
 }
 const LOCKICON='<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="3" fill="#fff" stroke="#8b93ad" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#8b93ad" stroke-width="1.8" stroke-linecap="round"/></svg>';
@@ -900,6 +971,40 @@ function renderDeco(){
     if(n<a.need){toast(fmt('함께한 날 '+a.need+'일이 되면 {cat이} 받을 수 있어'));return}
     S.wear=S.wear.includes(a.id)?S.wear.filter(x=>x!==a.id):[...S.wear,a.id];save();renderDeco();[homeCat,focusCat].forEach(c=>c.setMood(c.mood));decoCat.face('pet',1200);decoCat.hearts(3)});
   wearClasses(decoCat.svg);wearClasses(decoCat.el);
+  renderShop();
+}
+function owned(a){return a.need!=null?studyDays().length>=a.need:S.bought.includes(a.id)}
+function renderShop(){
+  $('#shopBal').textContent=S.churu;
+  $('#shopAcc').innerHTML=SHOP_ACC.map(a=>{
+    const has=owned(a),on=S.wear.includes(a.id),can=S.churu>=a.cost;
+    const foot=has?(on?'착용 중':'눌러서 착용'):`<span class="cost"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg>${a.cost}</span>`;
+    return `<button class="accb ${has?(on?'on':''):('buy '+(can?'':'cant'))}" data-a="${a.id}" style="--pc:${a.pc}">
+      <div class="accplate">${badgeIcon(a.id)}</div>${a.n}<div class="need">${foot}</div></button>`;
+  }).join('');
+  $('#shopAcc').querySelectorAll('.accb').forEach(b=>b.onclick=()=>{
+    const a=SHOP_ACC.find(x=>x.id===b.dataset.a);
+    if(owned(a)){S.wear=S.wear.includes(a.id)?S.wear.filter(x=>x!==a.id):[...S.wear,a.id];save();renderDeco();
+      [homeCat,focusCat].forEach(c=>c.setMood(c.mood));decoCat.face('pet',1200);decoCat.hearts(3);return}
+    if(S.churu<a.cost){toast('츄르가 모자라요. '+(a.cost-S.churu)+'개 더 모으면 살 수 있어요');return}
+    S.churu-=a.cost;S.bought.push(a.id);S.wear.push(a.id);save();renderDeco();renderAll();
+    [homeCat,focusCat].forEach(c=>c.setMood(c.mood));decoCat.hop();decoCat.face('pet',1500);decoCat.hearts(6);
+    decoCat.say(fmt('{me} 고마워! 바로 착용할게'),3000);
+  });
+  $('#shopRoom').innerHTML=ROOMS.map(r=>{
+    const has=S.roomBought.includes(r.id),on=S.room===r.id,can=S.churu>=r.cost;
+    const foot=has?(on?'적용 중':'눌러서 적용'):`<span class="cost"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg>${r.cost}</span>`;
+    return `<button class="roomb ${on?'on':''} ${has?'':(can?'':'cant')}" data-r="${r.id}">
+      <div class="swatch" style="background:${r.wall==='transparent'?'#fff':r.wall}"><i style="background:${r.f1}"></i><i style="background:${r.f2}"></i></div>
+      <span class="rn">${r.n}</span><div class="need">${foot}</div></button>`;
+  }).join('');
+  $('#shopRoom').querySelectorAll('.roomb').forEach(b=>b.onclick=()=>{
+    const r=ROOMS.find(x=>x.id===b.dataset.r);
+    if(S.roomBought.includes(r.id)){if(S.room!==r.id){S.room=r.id;save();applyRoom();renderDeco();decoCat.hearts(3);decoCat.face('pet',1000)}return}
+    if(S.churu<r.cost){toast('츄르가 모자라요. '+(r.cost-S.churu)+'개 더 모으면 살 수 있어요');return}
+    S.churu-=r.cost;S.roomBought.push(r.id);S.room=r.id;save();applyRoom();renderDeco();renderAll();
+    decoCat.hop();decoCat.hearts(6);decoCat.say(fmt('우와, {cat이} 방이 예뻐졌어!'),3000);
+  });
 }
 
 /* ---------- 설정 / 알림 ---------- */
@@ -946,7 +1051,7 @@ $('#b-export').onclick=async()=>{const {run,push,...rest}=S;const code='NYANGBAK
   try{await navigator.clipboard.writeText(code);toast('백업 코드 복사 완료! 메모장이나 카톡에 저장해 두세요')}catch(e){prompt('이 코드를 저장해 두세요',code)}};
 $('#b-import').onclick=()=>{openSheet(`<h3>백업 불러오기</h3><p class="hint">저장해 둔 백업 코드를 붙여넣어 주세요.</p><textarea class="inp" id="imp"></textarea><br><br><button class="btn" id="imp-ok">불러오기</button>`);
   $('#imp-ok').onclick=()=>{try{const t=$('#imp').value.trim().replace(/^NYANGBAK:/,'');const d=JSON.parse(decodeURIComponent(escape(atob(t))));
-    if(d.v!==1)throw 0;S={...load(),...d,push:S.push,run:null};save();closeSheet();applyFur();renderAll();toast('불러왔어요! 반가워')}catch(e){toast('코드가 올바르지 않아요')}}};
+    if(d.v!==1)throw 0;S={...load(),...d,push:S.push,run:null};save();closeSheet();applyFur();applyRoom();renderAll();toast('불러왔어요! 반가워')}catch(e){toast('코드가 올바르지 않아요')}}};
 
 /* ---------- 서비스워커에 상태 전달 (알림 문구를 기기에서 고르기 위해) ---------- */
 function syncSW(){
@@ -972,7 +1077,7 @@ $('#qz-x').onclick=()=>SM.quit();
 
 /* ---------- 시작 ---------- */
 function boot(){
-  applyFur();
+  applyFur();applyRoom();
   homeCat=new Walker($('#homeStage'));homeCat.onTap=homeTap;
   focusCat=new Walker($('#focusStage'),{speed:.8});focusCat.onTap=c=>{c.face('pet',1400);c.hearts(4);c.say(say('focus'),3000)};
   decoCat=new Walker($('#decoStage'),{wander:false});decoCat.x=0;decoCat.onTap=c=>{c.face('pet',1400);c.hearts(5);c.say(say('pet'),2500)};
