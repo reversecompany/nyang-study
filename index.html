@@ -18,7 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#fff3f6; --card:#ffffff; --ink:#5a4650; --soft:#9a8790; --line:#5a4646;
+  --bg:#fff3f6; --card:#ffffff; --ink:#5a4650; --soft:#7d6870; --line:#5a4646;
   --pink:#ff8fab; --pink-d:#f06d92; --pink-l:#ffe0e9;
   --mint:#8fdcc2; --mint-l:#dcf6ec; --butter:#ffd98a; --butter-l:#fff2cf;
   --lav:#c9b6ff; --lav-l:#efe8ff; --sky:#9fd3f0;
@@ -209,11 +209,19 @@ h3{font-family:'Jua';font-size:19px;margin:0 0 10px;font-weight:400}
 .fur i{display:block;width:34px;height:34px;border-radius:50%;margin:0 auto 4px;border:3px solid var(--line)}
 .fur.sel{outline:3px solid var(--pink)}
 .accs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.accb{border:0;border-radius:18px;background:#fff;padding:12px 4px 10px;box-shadow:0 3px 0 #f5dbe3;font-family:'Jua';font-size:16px;position:relative}
-.accb svg{width:46px;height:46px;display:block;margin:0 auto 4px}
-.accb small{display:block;font-family:'Gaegu';font-size:13px;color:var(--soft)}
-.accb.lock{opacity:.55;filter:grayscale(1)}
-.accb.on{outline:3px solid var(--pink);background:var(--pink-l)}
+.accb{border:0;border-radius:18px;background:#fff;padding:12px 6px 10px;box-shadow:0 3px 0 #f5dbe3;font-family:'Jua';font-size:15px;position:relative;overflow:hidden}
+.accplate{width:60px;height:60px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;
+  background:var(--pc,#ffe0e9);box-shadow:inset 0 -3px 0 rgba(0,0,0,.07)}
+.accplate svg{width:38px;height:38px;overflow:visible}
+.accb.tier-top:not(.lock) .accplate{background:linear-gradient(160deg,#fff3cf,#ffd35c);
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.07),0 0 0 3px #fff,0 0 12px rgba(255,211,92,.65)}
+.accb .need{display:flex;align-items:center;justify-content:center;gap:3px;font-family:'Gaegu';font-size:12.5px;color:var(--soft);margin-top:1px}
+.accb .need svg{width:12px;height:12px;flex:none}
+.accb.lock .accplate{background:#efe4e8}
+.accb.lock .accplate svg{filter:grayscale(1);opacity:.5}
+.accb.on{outline:3px solid var(--pink)}
+.accb.on:after{content:"✓";position:absolute;top:6px;right:8px;width:19px;height:19px;border-radius:50%;
+  background:var(--pink);color:#fff;font-size:12px;line-height:19px;font-family:'Jua'}
 
 /* ---------- 설정 ---------- */
 .field{margin-bottom:14px}
@@ -473,11 +481,11 @@ const FURS={
   white: {n:'하양', fur:'#ffffff',p1:'#ffffff',p2:'#ffffff',tail:'#ffffff'},
 };
 const ACCS=[
-  {id:'bow',    n:'리본',     need:1},
-  {id:'bell',   n:'방울 목걸이', need:3},
-  {id:'flower', n:'꽃 핀',    need:5},
-  {id:'glasses',n:'공부 안경', need:10},
-  {id:'crown',  n:'왕관',     need:20},
+  {id:'bow',    n:'리본',     need:1,  pc:'#ffe0e9'},
+  {id:'bell',   n:'방울 목걸이', need:3,  pc:'#fff2cf'},
+  {id:'flower', n:'꽃 핀',    need:5,  pc:'#dcf6ec'},
+  {id:'glasses',n:'공부 안경', need:10, pc:'#e8f2fb'},
+  {id:'crown',  n:'왕관',     need:20, pc:'#fff2cf', top:1},
 ];
 
 /* ---------- 사진 냥이: Pinterest에서 고른 치즈냥이들 (기분별) ---------- */
@@ -864,6 +872,18 @@ function furButtons(box,onPick){
   box.querySelectorAll('.fur').forEach(b=>b.onclick=()=>{S.fur=b.dataset.f;applyFur();save();onPick&&onPick()});
 }
 function accIcon(id){return `<svg class="cat" viewBox="-40 -48 80 80">${headSVG().replace('class="head"','class="head w-'+id+'"')}</svg>`}
+const ICONLINE='stroke="#5a4646" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"';
+function badgeIcon(id){
+  const s=ICONLINE;
+  return {
+    bow:`<svg viewBox="-24 -24 48 48"><path d="M0 0 L-15 -10 L-15 10 Z M0 0 L15 -10 L15 10 Z" fill="#ff7aa2" ${s}/><circle r="4.4" fill="#ff5c8a" ${s}/></svg>`,
+    bell:`<svg viewBox="-24 -24 48 48"><path d="M-16 -6 Q0 9 16 -6" fill="none" ${s} stroke-width="5"/><circle cy="4" r="7" fill="#ffd35c" ${s}/><path d="M-3 5h6" ${s} stroke-width="1.6"/></svg>`,
+    flower:`<svg viewBox="-24 -24 48 48"><g fill="#ffc9da" ${s} stroke-width="1.4"><circle cy="-8" r="6.2"/><circle cx="7.6" cy="-2.4" r="6.2"/><circle cx="4.8" cy="6.5" r="6.2"/><circle cx="-4.8" cy="6.5" r="6.2"/><circle cx="-7.6" cy="-2.4" r="6.2"/></g><circle r="4" fill="#ffd35c" ${s} stroke-width="1.3"/></svg>`,
+    glasses:`<svg viewBox="-24 -24 48 48"><g fill="rgba(255,255,255,.4)" stroke="#5a4646" stroke-width="2.4"><circle cx="-11" r="9.5"/><circle cx="11" r="9.5"/><path d="M-2.4 -1 Q0 -3.2 2.4 -1" fill="none"/><path d="M-20.5 -1h5M20.5 -1h-5" stroke-linecap="round"/></g></svg>`,
+    crown:`<svg viewBox="-24 -24 48 48"><path d="M-15 8 L-15 -6 L-7 1 L0 -13 L7 1 L15 -6 L15 8 Z" fill="#ffd35c" ${s}/><circle cy="-3" r="2.6" fill="#ff7aa2" ${s} stroke-width="1.4"/></svg>`,
+  }[id]||accIcon(id);
+}
+const LOCKICON='<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="3" fill="#fff" stroke="#8b93ad" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#8b93ad" stroke-width="1.8" stroke-linecap="round"/></svg>';
 function renderDeco(){
   $('#looks').innerHTML=[['photo','사진 냥이'],['draw','그림 냥이']].map(([k,n])=>`<button class="fur ${S.look===k?'sel':''}" data-l="${k}" style="font-size:17px;padding:14px 4px">${n}</button>`).join('');
   $('#looks').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.look=b.dataset.l;save();[homeCat,focusCat,decoCat].forEach(c=>c.setMood(c.mood));renderDeco()});
@@ -871,7 +891,9 @@ function renderDeco(){
   decoCat.setMood('happy');furButtons($('#furs'),renderDeco);
   const n=studyDays().length;
   $('#accs').innerHTML=ACCS.map(a=>{const ok=n>=a.need,on=S.wear.includes(a.id);
-    return `<button class="accb ${ok?'':'lock'} ${on?'on':''}" data-a="${a.id}">${accIcon(a.id)}${a.n}<small>${ok?(on?'착용 중':'눌러서 착용'):a.need+'일째에 열려요'}</small></button>`}).join('');
+    const need=ok?(on?'착용 중':'눌러서 착용'):`${LOCKICON}${a.need-n}일 남음`;
+    return `<button class="accb ${ok?'':'lock'} ${a.top?'tier-top':''} ${on?'on':''}" data-a="${a.id}" style="--pc:${a.pc}">
+      <div class="accplate">${badgeIcon(a.id)}</div>${a.n}<div class="need">${need}</div></button>`}).join('');
   $('#accs').querySelectorAll('.accb').forEach(b=>b.onclick=()=>{const a=ACCS.find(x=>x.id===b.dataset.a);
     if(n<a.need){toast(fmt('함께한 날 '+a.need+'일이 되면 {cat이} 받을 수 있어'));return}
     S.wear=S.wear.includes(a.id)?S.wear.filter(x=>x!==a.id):[...S.wear,a.id];save();renderDeco();[homeCat,focusCat].forEach(c=>c.setMood(c.mood));decoCat.face('pet',1200);decoCat.hearts(3)});
