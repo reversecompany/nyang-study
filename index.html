@@ -23,6 +23,7 @@
   --mint:#8fdcc2; --mint-l:#dcf6ec; --butter:#ffd98a; --butter-l:#fff2cf;
   --lav:#c9b6ff; --lav-l:#efe8ff; --sky:#9fd3f0;
   --fur:#fff4e6; --p1:#f6b26b; --p2:#f6b26b; --tail:#f6b26b;
+  --frame-bd:#ffffff; --frame-bg:#ffe9ef; --frame-tape:transparent;
   --room-wall:transparent; --room-floor1:#ffe6ee; --room-floor2:#ffdbe6; --room-border:#ffd0de; --room-rug:#fff;
   --r:22px;
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
@@ -110,8 +111,13 @@ button,input{font-family:inherit;color:inherit}
 /* ---------- 사진 냥이 (스티커) ---------- */
 .ph{display:none;position:absolute;left:50%;bottom:2px;width:112px;height:112px;margin-left:-56px;transform-origin:50% 100%}
 .photo .ph{display:block} .photo .cat{display:none}
-.pimg{width:100%;height:100%;border-radius:28px;border:5px solid #fff;background:#ffe9ef center/cover no-repeat;
-  box-shadow:0 5px 0 #f1cfd9,0 10px 18px rgba(120,60,80,.13);transition:background-image .2s}
+.pimg{width:100%;height:100%;border-radius:28px;border:5px solid var(--frame-bd);background-color:var(--frame-bg);
+  background-position:center;background-size:cover;background-repeat:no-repeat;
+  box-shadow:0 5px 0 #f1cfd9,0 10px 18px rgba(120,60,80,.13);transition:background-image .2s,border-color .3s,background-color .3s}
+.ftape{position:absolute;width:34px;height:16px;background:var(--frame-tape);opacity:.85;box-shadow:0 1px 2px rgba(0,0,0,.08);pointer-events:none;transition:background .3s}
+.ftape.a{left:-6px;top:6px;transform:rotate(-18deg)}
+.ftape.b{right:-6px;bottom:10px;transform:rotate(14deg)}
+.mini .ftape{width:22px;height:11px}
 .photo.walking .ph{animation:wob .44s ease-in-out infinite alternate}
 .photo.walking.m-tired .ph{animation-duration:.9s}
 .photo.sleeping .ph{animation:breathe 3s ease-in-out infinite}
@@ -297,6 +303,17 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
 .smch .tr{height:10px;background:#fff4f7;border-radius:8px;overflow:hidden}
 .smch .tr i{display:block;height:100%;border-radius:8px}
 .smch .v{text-align:right;font-size:14px;color:var(--soft)}
+.mockgrp{margin-bottom:12px}
+.mockgrp:last-child{margin-bottom:0}
+.mockhd{font-family:'Jua';font-size:15px;color:var(--soft);margin-bottom:2px}
+.mockrow{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px dashed #f6dce4;font-size:16px}
+.mockrow:last-child{border-bottom:0}
+.mockrow>span:first-child{color:var(--soft);width:30px}
+.mockrow b{font-family:'Jua';font-weight:400;font-size:19px;color:var(--pink-d)}
+.mockd{font-family:'Jua';font-size:13px;color:var(--soft);background:#f7f0f2;border-radius:8px;padding:1px 7px}
+.mockd.up{color:#3fa585;background:#e7f7f0}
+.mockd.down{color:var(--pink-d);background:#ffe3ea}
+.mockx{margin-left:auto;border:0;background:none;color:#d9c6cf;font-size:14px;padding:2px 6px}
 #quiz{position:fixed;inset:0;background:var(--bg);z-index:35;display:none;flex-direction:column;
   padding:calc(var(--sat) + 12px) 16px calc(var(--sab) + 16px);overflow-y:auto}
 #quiz.on{display:flex}
@@ -409,6 +426,8 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
     <div class="accs" id="accs"></div>
     <div class="shopbar"><h3 style="margin:0">상점</h3><div class="bal"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg><span id="shopBal">0</span></div></div>
     <div class="accs" id="shopAcc"></div>
+    <h3 style="margin-top:18px">액자 꾸미기 <span class="note">— 사진 냥이 프레임</span></h3>
+    <div class="rooms" id="shopFrame"></div>
     <h3 style="margin-top:18px">방 꾸미기</h3>
     <div class="rooms" id="shopRoom"></div>
   </section>
@@ -533,6 +552,14 @@ const ROOMS=[   // 츄르로 사는 방 테마
   {id:'lavender',n:'라벤더 방', cost:30, wall:'#f2eeff',      f1:'#ece4ff', f2:'#ddd0fb', bd:'#cdbdf0', rug:'#ffffff'},
   {id:'night',   n:'밤하늘 방', cost:45, wall:'#26234a',      f1:'#2d2a57', f2:'#242047', bd:'#3c3776', rug:'#3a3568'},
 ];
+const FRAMES=[   // 츄르로 사는 사진 냥이 액자
+  {id:'basic',  n:'기본 액자',   cost:0,  bd:'#ffffff', bg:'#ffe9ef', tape:'transparent'},
+  {id:'mint',   n:'민트 액자',   cost:12, bd:'#8fdcc2', bg:'#dcf6ec', tape:'transparent'},
+  {id:'butter', n:'버터 액자',   cost:12, bd:'#ffd98a', bg:'#fff2cf', tape:'transparent'},
+  {id:'lav',    n:'라벤더 액자', cost:12, bd:'#c9b6ff', bg:'#efe8ff', tape:'transparent'},
+  {id:'tape',   n:'테이프 액자', cost:20, bd:'#ffffff', bg:'#fff8ef', tape:'#ffb3c6'},
+  {id:'gold',   n:'별빛 골드 액자', cost:30, bd:'#ffd35c', bg:'#fff2cf', tape:'#ffe28a'},
+];
 
 /* ---------- 사진 냥이: 지연이의 진짜 고양이(레몬) 사진 + 부족한 상황용 Pinterest 치즈냥이 ---------- */
 const PIN='https://i.pinimg.com/474x/';
@@ -571,11 +598,11 @@ const PACC={
   scarf:'<svg viewBox="-22 -6 44 26"><path d="M-18 -2 Q0 8 18 -2 L18 4 Q0 14 -18 4 Z" fill="#8fdcc2" stroke="#5a4646" stroke-width="1.7" stroke-linejoin="round"/><rect x="-4" y="8" width="8" height="13" rx="2.2" fill="#6bc6a5" stroke="#5a4646" stroke-width="1.5"/></svg>',
 };
 function stickerHTML(kind){const id=pick(PHOTOS[kind]||PHOTOS.happy);
-  return `<div class="ph"><div class="pimg" style="background-image:url(${photoUrl(id)})"></div>${Object.entries(PACC).map(([k,v])=>`<div class="pacc ${k}">${v}</div>`).join('')}</div>`}
+  return `<div class="ph"><div class="pimg" style="background-image:url(${photoUrl(id)})"></div><div class="ftape a"></div><div class="ftape b"></div>${Object.entries(PACC).map(([k,v])=>`<div class="pacc ${k}">${v}</div>`).join('')}</div>`}
 
 /* ---------- 저장 ---------- */
 let S=load();
-function defaultsS(){return {v:1,me:'',cat:'',fur:'cheese',look:'photo',dday:defaultDday(),sessions:[],rests:[],churu:0,wear:[],seenAcc:[],run:null,push:null,created:Date.now(),bought:[],room:'basic',roomBought:['basic']};}
+function defaultsS(){return {v:1,me:'',cat:'',fur:'cheese',look:'photo',dday:defaultDday(),sessions:[],rests:[],churu:0,wear:[],seenAcc:[],run:null,push:null,created:Date.now(),bought:[],room:'basic',roomBought:['basic'],frame:'basic',frameBought:['basic']};}
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.v===1) return {...defaultsS(),...s};}catch(e){}
   return defaultsS();
@@ -709,6 +736,8 @@ function applyFur(){const f=FURS[S.fur]||FURS.cheese;const r=document.documentEl
 function applyRoom(){const rm=ROOMS.find(x=>x.id===S.room)||ROOMS[0];const r=document.documentElement.style;
   r.setProperty('--room-wall',rm.wall);r.setProperty('--room-floor1',rm.f1);r.setProperty('--room-floor2',rm.f2);
   r.setProperty('--room-border',rm.bd);r.setProperty('--room-rug',rm.rug)}
+function applyFrame(){const f=FRAMES.find(x=>x.id===S.frame)||FRAMES[0];const r=document.documentElement.style;
+  r.setProperty('--frame-bd',f.bd);r.setProperty('--frame-bg',f.bg);r.setProperty('--frame-tape',f.tape)}
 function wearClasses(el){[...ACCS,...SHOP_ACC].forEach(a=>el.classList.toggle('w-'+a.id,S.wear.includes(a.id)))}
 
 /* ---------- 걸어다니는 고양이 ---------- */
@@ -1005,6 +1034,20 @@ function renderShop(){
     S.churu-=r.cost;S.roomBought.push(r.id);S.room=r.id;save();applyRoom();renderDeco();renderAll();
     decoCat.hop();decoCat.hearts(6);decoCat.say(fmt('우와, {cat이} 방이 예뻐졌어!'),3000);
   });
+  $('#shopFrame').innerHTML=FRAMES.map(f=>{
+    const has=S.frameBought.includes(f.id),on=S.frame===f.id,can=S.churu>=f.cost;
+    const foot=has?(on?'적용 중':'눌러서 적용'):`<span class="cost"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg>${f.cost}</span>`;
+    return `<button class="roomb ${on?'on':''} ${has?'':(can?'':'cant')}" data-f="${f.id}">
+      <div class="swatch" style="background:${f.bg}"><i style="background:${f.bd}"></i>${f.tape!=='transparent'?`<i style="background:${f.tape}"></i>`:''}</div>
+      <span class="rn">${f.n}</span><div class="need">${foot}</div></button>`;
+  }).join('');
+  $('#shopFrame').querySelectorAll('.roomb').forEach(b=>b.onclick=()=>{
+    const f=FRAMES.find(x=>x.id===b.dataset.f);
+    if(S.frameBought.includes(f.id)){if(S.frame!==f.id){S.frame=f.id;save();applyFrame();renderDeco();decoCat.hearts(3);decoCat.face('pet',1000)}return}
+    if(S.churu<f.cost){toast('츄르가 모자라요. '+(f.cost-S.churu)+'개 더 모으면 살 수 있어요');return}
+    S.churu-=f.cost;S.frameBought.push(f.id);S.frame=f.id;save();applyFrame();renderDeco();renderAll();
+    decoCat.hop();decoCat.hearts(6);decoCat.say(fmt('{cat이} 액자도 예뻐졌어!'),3000);
+  });
 }
 
 /* ---------- 설정 / 알림 ---------- */
@@ -1077,7 +1120,7 @@ $('#qz-x').onclick=()=>SM.quit();
 
 /* ---------- 시작 ---------- */
 function boot(){
-  applyFur();applyRoom();
+  applyFur();applyRoom();applyFrame();
   homeCat=new Walker($('#homeStage'));homeCat.onTap=homeTap;
   focusCat=new Walker($('#focusStage'),{speed:.8});focusCat.onTap=c=>{c.face('pet',1400);c.hearts(4);c.say(say('focus'),3000)};
   decoCat=new Walker($('#decoStage'),{wander:false});decoCat.x=0;decoCat.onTap=c=>{c.face('pet',1400);c.hearts(5);c.say(say('pet'),2500)};

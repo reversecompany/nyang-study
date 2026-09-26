@@ -59,6 +59,7 @@ async function migrateIds(){
 /* ---------- 기록 ---------- */
 function st(){
   if (!S.sm) S.sm = {c:{}, r:{}, d:{}, rounds:{}, hist:[]};
+  if (!S.sm.mock) S.sm.mock = [];
   return S.sm;
 }
 const now = () => Date.now();
@@ -96,19 +97,20 @@ function chapterStats(){
   for (let ch = 1; ch < CH.length; ch++){
     const cards = CARDS.filter(c => c.ch === ch);
     const firstAcc = mean(s.r['f'+ch], .5, 3);
-    let sum = 0, seen = 0, strong = 0;
+    let sum = 0, seenSum = 0, seen = 0, strong = 0;
     for (const c of cards){
       const r = recallOf(s.c[c.id]);
-      if (r === null) sum += firstAcc; else { sum += r; seen++; if ((s.c[c.id].b||0) >= 3) strong++; }
+      if (r === null) sum += firstAcc; else { sum += r; seenSum += r; seen++; if ((s.c[c.id].b||0) >= 3) strong++; }
     }
-    const m = cards.length ? sum/cards.length : 0;
+    const m = cards.length ? sum/cards.length : 0;         // 예상 점수용 — 안 본 카드까지 보수적으로 섞어서 반영
+    const prog = seen ? seenSum/seen : 0;                  // 화면에 보여줄 단원별 학습률 — 실제로 푼 카드만의 평균이라 풀수록 바로 움직인다
     const pC = .2 + .8*Math.pow(m, 1.5);                   // 개념이 m만큼 떠오를 때 5지선다 한 문항을 맞힐 확률
     const cf = CH[ch].f || 0;
     const dr = s.r['d'+ch] || [];
     const pD = .2 + .8*mean(dr, .35, 3);
     const p = (1-cf)*pC + cf*pD;
     const tries = (s.r['c'+ch]||[]).length + dr.length;
-    out.push({ch, n:cards.length, seen, strong, m, p, tries, sure: tries >= 6});
+    out.push({ch, n:cards.length, seen, strong, m, prog, p, tries, sure: tries >= 6});
   }
   return out;
 }
@@ -316,16 +318,65 @@ function render(){
     <p class="note" style="text-align:center;margin:10px 0 16px">복습할 카드 ${dueN}장 · 본 카드 ${seenN} / ${CARDS.length}장</p>
     <div class="card sec"><h3>단원별 <span class="note">— 눌러서 그 단원만 풀기</span></h3>
       ${P.cs.map(c => `<button class="smch" data-ch="${c.ch}">
-        <span class="t"><em>${CH[c.ch].u}</em>${c.ch}. ${CH[c.ch].n}${CH[c.ch].w>=1.6?' <b class="hot">자주 나옴</b>':''}</span>
-        <span class="tr"><i style="width:${c.tries?Math.round(c.m*100):0}%;background:${c.m>=.8?'var(--mint)':c.m>=.55?'var(--butter)':'var(--pink)'}"></i></span>
-        <span class="v">${c.tries ? Math.round(c.m*100)+'%' : '—'}</span></button>`).join('')}
+        <span class="t"><em>${CH[c.ch].u}</em>${c.ch}. ${CH[c.ch].n}${CH[c.ch].w>=1.6?' <b class="hot">자주 나옴</b>':''}${c.seen?`<br><small style="font-size:11px;color:#c7b3bb">${c.seen}/${c.n}장 학습</small>`:''}</span>
+        <span class="tr"><i style="width:${c.seen?Math.round(c.prog*100):0}%;background:${c.prog>=.8?'var(--mint)':c.prog>=.55?'var(--butter)':'var(--pink)'}"></i></span>
+        <span class="v">${c.seen ? Math.round(c.prog*100)+'%' : '—'}</span></button>`).join('')}
     </div>
+    ${mockCard()}
     <p class="note" style="font-size:14px;line-height:1.5">출처: 2027 마더텅 수능기출 사회·문화 「기출 OX 607제」(정답·해설은 교재 정답표), 2027 EBS 수능특강 사회·문화 개념 체크·용어 정리, 윤성훈 사회문화 HOT 100, 문서연 에센셜(기출 선지 분류, 정답·해설은 교재 정답판).
       예상 점수는 2026학년도 6·9월 모평과 수능의 단원별 문항 수로 가중한 추정이고, 등급은 최근 수능의 대략적인 등급컷으로 바꾼 참고값이에요.</p>`;
   $('#sm-go').onclick = () => start({});
   $('#sm-wrong').onclick = () => start({wrong:true});
   $('#sm-drill').onclick = () => start({drillOnly:true});
   box.querySelectorAll('.smch').forEach(b => b.onclick = () => start({ch:+b.dataset.ch}));
+  $('#sm-mock').onclick = mockSheet;
+  box.querySelectorAll('.mockx').forEach(b => b.onclick = () => {
+    const s = st(), y = +b.dataset.y, mo = +b.dataset.mo, t = +b.dataset.t;
+    s.mock = s.mock.filter(m => !(m.y===y && m.mo===mo && m.t===t));
+    save(); render();
+  });
+}
+
+/* ---------- 모의고사 점수 기록 ---------- */
+function mockCard(){
+  const s = st();
+  const groups = {};
+  s.mock.forEach(m => (groups[m.y+'-'+m.mo] = groups[m.y+'-'+m.mo] || []).push(m));
+  const keys = Object.keys(groups).sort((a,b) => {
+    const [ay,am] = a.split('-').map(Number), [by,bm] = b.split('-').map(Number);
+    return by-ay || bm-am;
+  });
+  const body = keys.length ? keys.map(k => {
+    const [y,mo] = k.split('-');
+    const arr = groups[k].slice().sort((x,y) => x.t - y.t);
+    return `<div class="mockgrp"><div class="mockhd">${y}년 ${mo}월</div>${arr.map((m,i) => {
+      const d = i ? m.sc - arr[i-1].sc : null;
+      return `<div class="mockrow"><span>${i+1}회</span><b>${m.sc}점</b>${d!==null?`<span class="mockd ${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d}</span>`:''}<button class="mockx" data-y="${y}" data-mo="${mo}" data-t="${m.t}">✕</button></div>`;
+    }).join('')}</div>`;
+  }).join('') : `<p class="note" style="margin:0">아직 기록이 없어요. 모의고사를 보면 점수를 넣어보세요.</p>`;
+  return `<div class="card sec"><h3>모의고사 기록</h3>${body}<button class="btn sub mint" id="sm-mock" style="color:var(--ink);margin-top:${keys.length?'12px':'10px'}">+ 점수 기록하기</button></div>`;
+}
+function mockSheet(){
+  const yNow = new Date().getFullYear();
+  openSheet(`<h3>모의고사 점수 기록</h3>
+    <div class="field"><label>연도</label><input class="inp" id="mk-y" type="number" inputmode="numeric" value="${yNow}" min="2015" max="2035"></div>
+    <h3 style="margin-top:14px">몇 월 모의고사?</h3>
+    <div class="chips" id="mk-mo" style="grid-template-columns:repeat(4,1fr)">${[3,4,5,6,7,9,10,11].map(m=>`<button class="chip" style="--c:#ffe7ee;padding:12px 4px;font-size:17px" data-m="${m}">${m}월</button>`).join('')}</div>
+    <div class="field"><label>원점수 <span class="note">/ 50점</span></label><input class="inp" id="mk-s" type="number" inputmode="numeric" min="0" max="50" placeholder="예: 38"></div>
+    <button class="btn mint" id="mk-ok" style="color:var(--ink)">기록하기</button>`);
+  let mo = null;
+  $('#mk-mo').querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    $('#mk-mo').querySelectorAll('.chip').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel'); mo = +b.dataset.m;
+  });
+  $('#mk-ok').onclick = () => {
+    const y = +$('#mk-y').value, sc = +$('#mk-s').value;
+    if (!y || !mo){ toast('연도랑 월을 골라줘'); return; }
+    if (!Number.isFinite(sc) || sc < 0 || sc > 50){ toast('점수는 0~50 사이로 입력해줘'); return; }
+    st().mock.push({y, mo, sc, t: now()});
+    save(); closeSheet(); render();
+    toast('기록했어요!');
+  };
 }
 
 function start(opt){
