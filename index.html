@@ -200,6 +200,18 @@ h3{font-family:'Jua';font-size:19px;margin:0 0 10px;font-weight:400}
 .cal .d svg{width:62%;height:62%}
 .cal .d .n{position:absolute;top:2px;left:5px;font-size:11px}
 .cal .d.today{outline:2px solid var(--pink)}
+.cal .d.has{cursor:pointer}
+/* 하루 기록 고치기·지우기 */
+.srows{display:grid;gap:8px;margin-bottom:4px}
+.srow{display:flex;align-items:center;gap:10px;background:#fff7f9;border-radius:16px;padding:10px 10px 10px 12px}
+.srow>i{width:10px;height:34px;border-radius:5px;flex:none}
+.srow .si{flex:1;min-width:0}.srow .si b{display:block;font-family:'Jua';font-weight:400;font-size:18px}
+.srow .si span{display:block;font-size:14px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow button{border:0;border-radius:12px;padding:8px 10px;font-family:'Jua';font-size:15px;background:#fff;box-shadow:0 2px 0 #efd5dd;flex:none}
+.srow .sdel{color:var(--pink-d)}
+.mstep{display:flex;align-items:center;justify-content:center;gap:6px;margin:0 0 6px}
+.mstep button{border:0;border-radius:14px;width:46px;height:44px;flex:none;font-family:'Jua';font-size:17px;background:#ffe7ee;box-shadow:0 3px 0 #f6c9d6}
+.mstep b{font-family:'Jua';font-weight:400;font-size:22px;min-width:100px;text-align:center;color:var(--pink-d);white-space:nowrap}
 .calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .calnav button{background:#fff;border:0;border-radius:12px;width:38px;height:38px;font-family:'Jua';font-size:18px;box-shadow:0 2px 0 #f3d9e1}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -446,6 +458,7 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
     <div class="card sec">
       <div class="calnav"><button id="c-prev">‹</button><h3 id="c-title" style="margin:0"></h3><button id="c-next">›</button></div>
       <div class="cal" id="cal"></div>
+      <p class="note" style="margin:10px 0 0;text-align:center">발자국 찍힌 날을 누르면 기록을 고치거나 지울 수 있어요</p>
     </div>
     <div class="card sec">
       <h3>이번 주 과목별</h3>
@@ -1057,6 +1070,45 @@ function breathEnd(){brT.forEach(clearTimeout);brT=[];$('#breath').classList.rem
   [$('#br-photo'),$('#br-glow')].forEach(el=>{el.style.transitionDuration='0s';el.style.transform=''});
   homeCat.face('pet',1500);homeCat.hearts(4)}
 
+/* ---------- 기록 고치기·지우기 (2026-09-28 지연 피드백: 시간이 잘못 체크돼 생윤이 들어감) ----------
+   받은 츄르도 같이 맞춘다(타이머·직접 기록은 시간에 따라, 퀴즈는 1개). 0 밑으로는 안 내려간다. */
+const HOW={timer:'타이머',log:'직접 기록',quiz:'사문 퀴즈'};
+function gainOf(x){return x.h==='quiz'?1:1+(x.m>=25?1:0)+(x.m>=50?1:0)}
+function hm(t){const d=new Date(t);return z(d.getHours())+':'+z(d.getMinutes())}
+function daySheet(k){
+  const list=S.sessions.filter(x=>x.d===k).sort((a,b)=>a.t-b.t);
+  if(!list.length){closeSheet();return}
+  const[,mo,dd]=k.split('-').map(Number);
+  openSheet(`<h3>${mo}월 ${dd}일 기록 <span class="note">— 모두 ${fmtMin(minsOn(k))}</span></h3><p class="hint">잘못 들어간 건 고치거나 지울 수 있어요</p>
+    <div class="srows">${list.map(x=>`<div class="srow"><i style="background:${subj(x.s).c}"></i><div class="si"><b>${subj(x.s).n}</b><span>${fmtMin(x.m)} · ${hm(x.t)}${x.h==='timer'?'':' · '+(HOW[x.h]||'기록')}</span></div>
+      <button class="sedit" data-t="${x.t}">고치기</button><button class="sdel" data-t="${x.t}">지우기</button></div>`).join('')}</div>`);
+  $('#sheet').querySelectorAll('.sedit').forEach(b=>b.onclick=()=>editSession(+b.dataset.t));
+  $('#sheet').querySelectorAll('.sdel').forEach(b=>b.onclick=()=>delSession(+b.dataset.t));
+}
+function editSession(t){
+  const x=S.sessions.find(y=>y.t===t);if(!x)return;let sid=x.s,m=x.m;
+  openSheet(`<h3>기록 고치기</h3><div class="chips" id="es-s">${SUBJ.map(s=>`<button class="chip ${s.id===sid?'sel':''}" style="--c:${s.c}" data-s="${s.id}">${s.n}</button>`).join('')}</div>
+    <h3>시간</h3><div class="mstep"><button data-d="-10">−10</button><button data-d="-1">−1</button><b id="es-m"></b><button data-d="1">+1</button><button data-d="10">+10</button></div>
+    <div class="row"><button class="btn sub ghost" id="es-back">뒤로</button><button class="btn sub" id="es-ok" style="color:#fff">저장</button></div>`);
+  const show=()=>$('#es-m').textContent=fmtMin(m);show();
+  $('#es-s').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{$('#es-s').querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));b.classList.add('sel');sid=b.dataset.s});
+  $('#sheet').querySelectorAll('.mstep button').forEach(b=>b.onclick=()=>{m=Math.max(1,Math.min(600,m+(+b.dataset.d)));show()});
+  $('#es-back').onclick=()=>daySheet(x.d);
+  $('#es-ok').onclick=()=>{
+    const g0=gainOf(x);x.s=sid;x.m=m;const c0=S.churu;if(x.h!=='quiz')S.churu=Math.max(0,S.churu+gainOf(x)-g0);
+    const dc=S.churu-c0;save();renderAll();daySheet(x.d);toast('고쳤어요!'+(dc?` 츄르 ${dc>0?'+':''}${dc}`:''))};
+}
+function delSession(t){
+  const x=S.sessions.find(y=>y.t===t);if(!x)return;const g=Math.min(gainOf(x),S.churu);
+  openModal(`<p class="rewardnum" style="font-size:25px">이 기록을 지울까요?</p><p class="line">${subj(x.s).n} ${fmtMin(x.m)} (${hm(x.t)})</p>
+    <p class="note">${g?`이 공부로 받은 츄르 ${g}개도 같이 빠져요`:'츄르는 그대로예요'}</p><br>
+    <div class="row" style="margin:0"><button class="btn sub ghost" onclick="closeModal()">안 지울래</button><button class="btn sub" id="ds-ok" style="color:#fff">지우기</button></div>`);
+  $('#ds-ok').onclick=()=>{
+    S.sessions=S.sessions.filter(y=>y.t!==t);S.churu-=g;
+    if(!S.sessions.some(y=>y.d===x.d))S.album=S.album.filter(e=>e.d!==x.d);   // 그날 공부가 하나도 안 남으면 그날 폴라로이드도 뺀다
+    save();closeModal();renderAll();daySheet(x.d);toast('지웠어요')};
+}
+
 /* ---------- 기록 탭 ---------- */
 let calM=null;
 function renderRec(){
@@ -1069,8 +1121,9 @@ function renderRec(){
   for(let i=0;i<first.getDay();i++)h+='<div></div>';
   for(let d=1;d<=n;d++){const k=y+'-'+z(mo)+'-'+z(d),mm=minsOn(k),r=S.rests.includes(k);
     const ic=mm>0?`<svg viewBox="0 0 24 24"><use href="#i-paw" fill="${mm>=60?'#ff6b95':mm>=20?'#ff8fab':'#ffb8cb'}"/></svg>`:r?`<svg viewBox="0 0 24 24"><use href="#i-moon"/></svg>`:'';
-    h+=`<div class="d ${k===t?'today':''}"><span class="n">${d}</span>${ic}</div>`}
+    h+=`<div class="d ${k===t?'today':''} ${mm>0?'has':''}" data-k="${k}"><span class="n">${d}</span>${ic}</div>`}
   $('#cal').innerHTML=h;
+  $('#cal').querySelectorAll('.d.has').forEach(b=>b.onclick=()=>daySheet(b.dataset.k));
   const by={};wk.forEach(s=>by[s.s]=(by[s.s]||0)+s.m);const mx=Math.max(30,...Object.values(by));
   $('#bars').innerHTML=SUBJ.filter(s=>s.id!=='etc'||by.etc).map(s=>`<div class="bar"><span>${s.n.replace('생활과윤리','생윤').replace('사회문화','사문')}</span><div class="tr"><div class="fl" style="--c:${s.c};width:${(by[s.id]||0)/mx*100}%"></div></div><span class="v">${by[s.id]||0}분</span></div>`).join('')
     +(wk.length?'':'<p class="note">이번 주 첫 발자국을 기다리는 중이에요.</p>');

@@ -499,6 +499,7 @@ function finish(){
   const mins = Math.max(1, Math.round((now()-g.t0)/60000));
   const before = studyDays().length;
   S.sessions.push({d, s:'soc', m:mins, t:now(), h:'quiz'});
+  if (typeof albumAdd === 'function') albumAdd(d);
   const churu = 1 + (ok >= n*.8 ? 1 : 0);
   S.churu += churu;
   save(); renderAll(); render();
