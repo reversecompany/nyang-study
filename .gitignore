@@ -3,3 +3,4 @@ node_modules/
 .DS_Store
 vapid.local.json
 .claude/
+server/admin.local.json

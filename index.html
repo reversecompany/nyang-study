@@ -1279,7 +1279,7 @@ async function unpackS(d){
 function syncSoon(){if(!syncK||!SYNC_URL)return;clearTimeout(syncT);syncT=setTimeout(syncPush,2500)}
 async function syncPush(force=false){
   if(!syncK||!SYNC_URL)return false;clearTimeout(syncT);syncT=null;
-  try{const body=JSON.stringify({k:syncK,upd:S.upd||0,data:await packS(),force});
+  try{const body=JSON.stringify({k:syncK,upd:S.upd||0,data:await packS(),force,me:S.me||''});
     const r=await(await fetch(SYNC_URL,{method:'POST',body,keepalive:body.length<60000})).json();
     if(r.ok){lastSync=Date.now();renderSyncCard();return true}
     if(r.stale)await syncPull();}catch(e){}
@@ -1305,12 +1305,14 @@ async function linkDevice(k){
   if(res==='pulled')toast(fmt('연결됐어요! 이제 여기서도 {cat랑} 같은 기록이에요'));
   else if(res==='err'){toast('인터넷 연결을 확인하고 다시 열어 주세요')}
   renderSyncCard();return res}
-async function makeLink(){
-  syncK='ny-'+[...crypto.getRandomValues(new Uint8Array(12))].map(b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');
-  if(!S.upd)S.upd=Date.now();
-  if(!await syncPush(true)){syncK=null;toast('연결을 못 했어요. 인터넷을 확인하고 다시 눌러 주세요');return}
-  try{localStorage.setItem(SYNCK,syncK)}catch(e){}
-  renderSyncCard();linkSheet();
+/* 연결 코드는 학생이 만들 필요 없이 앱이 알아서 만든다. 선생님은 관리자 조회로 링크를 꺼내 보내 준다(server/links.py). */
+async function autoLink(){
+  if(syncK||!SYNC_URL||!S.me)return false;
+  const k='ny-'+[...crypto.getRandomValues(new Uint8Array(12))].map(b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');
+  syncK=k;if(!S.upd)S.upd=Date.now();
+  if(!await syncPush(true)){syncK=null;return false}
+  try{localStorage.setItem(SYNCK,k)}catch(e){}
+  renderSyncCard();return true;
 }
 function linkSheet(){
   openSheet(`<h3>다른 기기에서 열기</h3><p class="hint">컴퓨터나 다른 폰에서 이 링크를 열면 끝이에요.<br>카톡 '나와의 채팅'으로 보내 두면 편해요.</p>
@@ -1332,9 +1334,9 @@ function renderSyncCard(){
   if(!SYNC_URL){c.style.display='none';return}
   c.style.display='block';
   if(!syncK){
-    c.innerHTML=`<h3>컴퓨터에서도 하기</h3><p class="note" style="margin-top:0">폰·컴퓨터·태블릿 어디서 열어도 같은 기록으로 이어져요.</p>
-      <button class="btn mint" id="sy-make" style="color:var(--ink)">연결 링크 만들기</button><button class="link" id="sy-code">링크를 받았어요</button>`;
-    $('#sy-make').onclick=makeLink;$('#sy-code').onclick=codeSheet;return}
+    c.innerHTML=`<h3>컴퓨터에서도 하기</h3><p class="note" style="margin-top:0">인터넷이 연결되면 알아서 준비돼요.</p>
+      <button class="link" id="sy-code" style="margin-top:4px">링크를 받았어요</button>`;
+    $('#sy-code').onclick=codeSheet;return}
   const ago=lastSync?Math.round((Date.now()-lastSync)/60000):null;
   c.innerHTML=`<h3>기기 연결됨</h3><p class="note" style="margin-top:0">어디서 공부해도 같은 기록으로 이어져요.${ago===null?'':ago<1?' 방금 동기화했어요.':` ${ago}분 전에 동기화했어요.`}</p>
     <button class="btn sub ghost" id="sy-send">다른 기기에 링크 보내기</button><button class="link" id="sy-now">지금 동기화</button>`;
@@ -1372,7 +1374,7 @@ function boot(){
     $('#onb').classList.add('on');
     onbCat=new Walker($('#onbStage'));onbCat.setMood('happy');onbCat.onTap=c=>{c.face('pet',1400);c.hearts(5);c.say('반가워!',2000)};
     $('#o-go').onclick=()=>{const me=$('#o-me').value.trim();if(!me){toast('너를 부를 이름을 알려줘');return}
-      S.me=me;S.cat=$('#o-cat').value.trim()||'모찌';save();$('#onb').classList.remove('on');renderAll();
+      S.me=me;S.cat=$('#o-cat').value.trim()||'모찌';save();$('#onb').classList.remove('on');renderAll();autoLink();
       homeCat.hop();homeCat.say(fmt('반가워 {me}! 나는 {cat이야}. 오늘부터 잘 부탁해'),6000)};
   }
   const q=new URLSearchParams(location.search);
@@ -1383,6 +1385,7 @@ function boot(){
   if(hk)history.replaceState(null,'',location.pathname+location.search);
   const first=hk&&hk!==syncK?linkDevice(hk):syncPull();
   Promise.race([first,new Promise(r=>setTimeout(r,4000))]).then(()=>{
+    autoLink();
     if(S.me&&!S.run)setTimeout(()=>{if(!shopRefund())albumBackfill()},700)});
 }
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
