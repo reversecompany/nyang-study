@@ -485,6 +485,7 @@ textarea.inp{height:90px;font-size:13px;font-family:ui-monospace,monospace;resiz
       <div class="field" style="margin:0"><label>수능 날짜</label><input class="inp" id="s-dday" type="date"></div>
     </div>
     <div class="card sec" id="pushCard"></div>
+    <div class="card sec" id="syncCard" style="display:none"></div>
     <div class="card sec">
       <h3>기록 옮기기</h3>
       <p class="note" style="margin-top:0">폰을 바꾸거나 앱을 지우기 전에 백업 코드를 저장해 두세요.</p>
@@ -660,7 +661,7 @@ function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.v===1) return {...defaultsS(),...s};}catch(e){}
   return defaultsS();
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} syncSW();}
+function save(){S.upd=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} syncSW();syncSoon();}
 function defaultDday(){const y=new Date().getMonth()>=11?new Date().getFullYear()+1:new Date().getFullYear();return y+'-11-19'}
 
 /* ---------- 날짜: 새벽 4시까지는 전날로 친다 (늦게 공부하는 친구 배려) ---------- */
@@ -979,7 +980,8 @@ function chime(){if(!audioCtx)return;const t=audioCtx.currentTime;[[784,0],[1047
   o.connect(g).connect(audioCtx.destination);o.start(t+d);o.stop(t+d+.55)})}
 async function requestWake(){try{wakeLock=await navigator.wakeLock?.request('screen')}catch(e){}}
 function releaseWake(){try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(S.run)requestWake();renderAll()}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(S.run)requestWake();renderAll();if(Date.now()-lastSync>5000)syncPull()}
+  else if(syncT)syncPush()});
 
 /* ---------- 기록만 하기 ---------- */
 function logSheet(){
@@ -1259,11 +1261,92 @@ function syncSW(){
   caches.open('nyang-state').then(c=>c.put('state.json',new Response(JSON.stringify(state),{headers:{'content-type':'application/json'}}))).catch(()=>{});
 }
 
+/* ---------- 기기 동기화: 폰·컴퓨터 어디서 열어도 같은 기록 ----------
+   서버 = Apps Script "냥공부 동기화"(server/sync.gs). 연결 코드(ny-…)는 공개 코드에 없고 기기마다 localStorage에만 있다.
+   가장 최근에 바뀐 쪽(S.upd)이 이긴다. 처음 연결하는 기기는 서버 기록을 그대로 받는다. */
+const SYNC_URL=(location.hostname==='localhost'&&localStorage.getItem('nyang.syncurl'))||'https://script.google.com/macros/s/AKfycbyzhOC1n5O7tD5XPX-97mPAdbo_2y9yJtU9cnivy0snvgdfr_9ExohgHeO0cyYK7cjkmg/exec';
+const SYNCK='nyang.k',APP_URL='https://reversecompany.github.io/nyang-study/';
+let syncK=null;try{syncK=localStorage.getItem(SYNCK)}catch(e){}
+let syncT=null,lastSync=0;
+async function packS(){const {run,push,...rest}=S;const j=JSON.stringify(rest);
+  if(window.CompressionStream){try{const u=new Uint8Array(await new Response(new Blob([j]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+    let b='';for(let i=0;i<u.length;i+=8192)b+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return 'G1:'+btoa(b)}catch(e){}}
+  return 'J1:'+btoa(unescape(encodeURIComponent(j)))}
+async function unpackS(d){
+  if(d.startsWith('G1:')){const u=Uint8Array.from(atob(d.slice(3)),c=>c.charCodeAt(0));
+    return JSON.parse(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text())}
+  return JSON.parse(decodeURIComponent(escape(atob(d.slice(3)))))}
+function syncSoon(){if(!syncK||!SYNC_URL)return;clearTimeout(syncT);syncT=setTimeout(syncPush,2500)}
+async function syncPush(force=false){
+  if(!syncK||!SYNC_URL)return false;clearTimeout(syncT);syncT=null;
+  try{const body=JSON.stringify({k:syncK,upd:S.upd||0,data:await packS(),force});
+    const r=await(await fetch(SYNC_URL,{method:'POST',body,keepalive:body.length<60000})).json();
+    if(r.ok){lastSync=Date.now();renderSyncCard();return true}
+    if(r.stale)await syncPull();}catch(e){}
+  return false}
+async function syncPull(adopt=false){   // adopt: 이 기기를 처음 연결할 때 — 서버 기록을 그대로 받는다
+  if(!syncK||!SYNC_URL)return 'off';
+  try{const r=await(await fetch(SYNC_URL+'?action=load&k='+encodeURIComponent(syncK),{cache:'no-store'})).json();
+    if(!r.data){await syncPush(true);return 'pushed'}
+    if(adopt||r.upd>(S.upd||0)){const d=await unpackS(r.data);if(d.v!==1)return 'bad';
+      clearTimeout(syncT);syncT=null;
+      S={...defaultsS(),...d,push:S.push,run:S.run,upd:r.upd};
+      try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} syncSW();
+      applyFur();applyRoom();applyFrame();if(S.me)$('#onb').classList.remove('on');
+      [homeCat,focusCat,decoCat].forEach(c=>c&&c.setMood(c.mood));renderAll();lastSync=Date.now();return 'pulled'}
+    if(r.upd<(S.upd||0))await syncPush();
+    lastSync=Date.now();renderSyncCard();return 'same'}catch(e){return 'err'}}
+function syncLink(){return APP_URL+'#k='+syncK}
+addEventListener('hashchange',()=>{const m=location.hash.match(/k=(ny-[a-z0-9]{12})/);if(!m)return;
+  history.replaceState(null,'',location.pathname+location.search);if(m[1]!==syncK)linkDevice(m[1])});
+async function linkDevice(k){
+  syncK=k;try{localStorage.setItem(SYNCK,k);if(S.sessions.length)localStorage.setItem(KEY+'.bak',JSON.stringify(S))}catch(e){}
+  const res=await syncPull(true);
+  if(res==='pulled')toast(fmt('연결됐어요! 이제 여기서도 {cat랑} 같은 기록이에요'));
+  else if(res==='err'){toast('인터넷 연결을 확인하고 다시 열어 주세요')}
+  renderSyncCard();return res}
+async function makeLink(){
+  syncK='ny-'+[...crypto.getRandomValues(new Uint8Array(12))].map(b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');
+  if(!S.upd)S.upd=Date.now();
+  if(!await syncPush(true)){syncK=null;toast('연결을 못 했어요. 인터넷을 확인하고 다시 눌러 주세요');return}
+  try{localStorage.setItem(SYNCK,syncK)}catch(e){}
+  renderSyncCard();linkSheet();
+}
+function linkSheet(){
+  openSheet(`<h3>다른 기기에서 열기</h3><p class="hint">컴퓨터나 다른 폰에서 이 링크를 열면 끝이에요.<br>카톡 '나와의 채팅'으로 보내 두면 편해요.</p>
+    <input class="inp" readonly value="${syncLink()}" style="font-size:14px" onclick="this.select()"><br><br>
+    <button class="btn" id="lk-share">링크 보내기</button>
+    <p class="note" style="margin-top:12px">이 링크는 ${fmt('{me}')}만의 열쇠예요. 다른 사람한테는 보내지 마세요.</p>`);
+  $('#lk-share').onclick=async()=>{const text=fmt('냥공부 ({me}) — 이 링크로 열면 같은 기록이에요\n')+syncLink();
+    try{if(navigator.share){await navigator.share({text});return}}catch(e){if(e.name==='AbortError')return}
+    try{await navigator.clipboard.writeText(syncLink());toast('링크 복사 완료!')}catch(e){prompt('이 링크를 복사해 주세요',syncLink())}};
+}
+function codeSheet(){
+  openSheet(`<h3>링크로 연결하기</h3><p class="hint">다른 기기에서 받은 링크(또는 ny-로 시작하는 코드)를 붙여넣어 주세요.<br>이 기기 기록 대신 연결된 기록을 불러와요.</p>
+    <input class="inp" id="lk-in" placeholder="https://…#k=ny-…" style="font-size:15px"><br><br><button class="btn" id="lk-ok">연결하기</button>`);
+  $('#lk-ok').onclick=async()=>{const m=$('#lk-in').value.match(/ny-[a-z0-9]{12}/);if(!m){toast('링크가 올바르지 않아요');return}
+    closeSheet();await linkDevice(m[0])};
+}
+function renderSyncCard(){
+  const c=$('#syncCard');if(!c)return;
+  if(!SYNC_URL){c.style.display='none';return}
+  c.style.display='block';
+  if(!syncK){
+    c.innerHTML=`<h3>컴퓨터에서도 하기</h3><p class="note" style="margin-top:0">폰·컴퓨터·태블릿 어디서 열어도 같은 기록으로 이어져요.</p>
+      <button class="btn mint" id="sy-make" style="color:var(--ink)">연결 링크 만들기</button><button class="link" id="sy-code">링크를 받았어요</button>`;
+    $('#sy-make').onclick=makeLink;$('#sy-code').onclick=codeSheet;return}
+  const ago=lastSync?Math.round((Date.now()-lastSync)/60000):null;
+  c.innerHTML=`<h3>기기 연결됨</h3><p class="note" style="margin-top:0">어디서 공부해도 같은 기록으로 이어져요.${ago===null?'':ago<1?' 방금 동기화했어요.':` ${ago}분 전에 동기화했어요.`}</p>
+    <button class="btn sub ghost" id="sy-send">다른 기기에 링크 보내기</button><button class="link" id="sy-now">지금 동기화</button>`;
+  $('#sy-send').onclick=linkSheet;
+  $('#sy-now').onclick=async()=>{const r=await syncPull();toast(r==='err'?'인터넷 연결을 확인해 주세요':r==='pulled'?'다른 기기 기록을 불러왔어요':'최신 상태예요')};
+}
+
 /* ---------- 탭 ---------- */
 function show(v){document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
   document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('on',e.dataset.v===v));window.scrollTo(0,0);renderAll()}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
-function renderAll(){renderHome();if($('#v-sm').classList.contains('on'))SM.render();if($('#v-rec').classList.contains('on'))renderRec();if($('#v-deco').classList.contains('on'))renderDeco();if($('#v-set').classList.contains('on'))renderSet()}
+function renderAll(){renderHome();renderSyncCard();if($('#v-sm').classList.contains('on'))SM.render();if($('#v-rec').classList.contains('on'))renderRec();if($('#v-deco').classList.contains('on'))renderDeco();if($('#v-set').classList.contains('on'))renderSet()}
 
 $('#b-start').onclick=()=>subjectSheet(durationSheet);
 $('#b-five').onclick=()=>subjectSheet(s=>{closeSheet();startFocus(s,5)});
@@ -1294,8 +1377,13 @@ function boot(){
   }
   const q=new URLSearchParams(location.search);
   if(q.get('from')==='push'&&S.me&&!S.run){setTimeout(()=>{if(mood()!=='happy')homeCat.say(say(mood()==='sleep'?'wake':'normal'),5000)},900)}
-  if(S.me&&!S.run)setTimeout(()=>{if(!shopRefund())albumBackfill()},700);
   syncSW();
+  // 동기화를 먼저 끝내고(최대 4초) 나서 1회성 알림(환불·앨범)을 띄운다 — 오래된 기기 기록이 새 기록을 덮지 않게
+  const hk=(location.hash.match(/k=(ny-[a-z0-9]{12})/)||[])[1];
+  if(hk)history.replaceState(null,'',location.pathname+location.search);
+  const first=hk&&hk!==syncK?linkDevice(hk):syncPull();
+  Promise.race([first,new Promise(r=>setTimeout(r,4000))]).then(()=>{
+    if(S.me&&!S.run)setTimeout(()=>{if(!shopRefund())albumBackfill()},700)});
 }
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 boot();
