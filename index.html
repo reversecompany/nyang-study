@@ -257,6 +257,14 @@ h3{font-family:'Jua';font-size:19px;margin:0 0 10px;font-weight:400}
 .roomb.on:after{content:"✓";position:absolute;top:6px;right:8px;width:19px;height:19px;border-radius:50%;
   background:var(--pink);color:#fff;font-size:12px;line-height:19px;font-family:'Jua'}
 .roomb.cant{opacity:.55}
+/* 구매 미리보기 — 상점에서 누르면 바로 사지 않고 여기서 한 번 더 확인 */
+.stage.bpv{height:164px;margin:0 0 14px;border-radius:20px;background:var(--bg)}
+.bpv .win{right:12px;top:10px;width:56px;height:46px}
+.bpcat{position:absolute;left:50%;bottom:10px;width:140px;height:112px;margin-left:-70px}
+.bpname{font-family:'Jua';font-size:24px;color:var(--pink-d);margin:0}
+.bpcost{display:inline-flex;align-items:center;gap:5px;background:var(--butter-l);border-radius:99px;padding:5px 14px;margin-top:6px;
+  font-family:'Jua';font-size:18px;color:#a97a1f}
+.bpcost svg{width:20px;height:20px}
 
 /* ---------- 설정 ---------- */
 .field{margin-bottom:14px}
@@ -602,7 +610,7 @@ function stickerHTML(kind){const id=pick(PHOTOS[kind]||PHOTOS.happy);
 
 /* ---------- 저장 ---------- */
 let S=load();
-function defaultsS(){return {v:1,me:'',cat:'',fur:'cheese',look:'photo',dday:defaultDday(),sessions:[],rests:[],churu:0,wear:[],seenAcc:[],run:null,push:null,created:Date.now(),bought:[],room:'basic',roomBought:['basic'],frame:'basic',frameBought:['basic']};}
+function defaultsS(){return {v:1,me:'',cat:'',fur:'cheese',look:'photo',dday:defaultDday(),sessions:[],rests:[],churu:0,wear:[],seenAcc:[],run:null,push:null,created:Date.now(),bought:[],room:'basic',roomBought:['basic'],frame:'basic',frameBought:['basic'],shopFix:0};}
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.v===1) return {...defaultsS(),...s};}catch(e){}
   return defaultsS();
@@ -809,7 +817,7 @@ function openModal(html){$('#modal').innerHTML=html;$('#modalDim').classList.add
 function closeModal(){$('#modalDim').classList.remove('on')}
 $('#sheetDim').addEventListener('click',e=>{if(e.target.id==='sheetDim')closeSheet()});
 function fmtMin(m){return m>=60?Math.floor(m/60)+'시간'+(m%60?' '+m%60+'분':''):m+'분'}
-function miniCat(extra=''){if(S.look==='photo'){const cls=ACCS.filter(a=>S.wear.includes(a.id)).map(a=>'w-'+a.id).join(' ');return `<div class="mini ${cls}" style="position:relative;height:118px;width:118px">${stickerHTML('happy')}</div>`}
+function miniCat(extra=''){if(S.look==='photo'){const cls=[...ACCS,...SHOP_ACC].filter(a=>S.wear.includes(a.id)).map(a=>'w-'+a.id).join(' ');return `<div class="mini ${cls}" style="position:relative;height:118px;width:118px">${stickerHTML('happy')}</div>`}
   return `<div class="mini" style="position:relative">${catSVG().replace('class="cat"','class="cat happyface '+extra+'"')}</div>`}
 
 /* ---------- 홈 ---------- */
@@ -1015,10 +1023,7 @@ function renderShop(){
     const a=SHOP_ACC.find(x=>x.id===b.dataset.a);
     if(owned(a)){S.wear=S.wear.includes(a.id)?S.wear.filter(x=>x!==a.id):[...S.wear,a.id];save();renderDeco();
       [homeCat,focusCat].forEach(c=>c.setMood(c.mood));decoCat.face('pet',1200);decoCat.hearts(3);return}
-    if(S.churu<a.cost){toast('츄르가 모자라요. '+(a.cost-S.churu)+'개 더 모으면 살 수 있어요');return}
-    S.churu-=a.cost;S.bought.push(a.id);S.wear.push(a.id);save();renderDeco();renderAll();
-    [homeCat,focusCat].forEach(c=>c.setMood(c.mood));decoCat.hop();decoCat.face('pet',1500);decoCat.hearts(6);
-    decoCat.say(fmt('{me} 고마워! 바로 착용할게'),3000);
+    buySheet('acc',a);
   });
   $('#shopRoom').innerHTML=ROOMS.map(r=>{
     const has=S.roomBought.includes(r.id),on=S.room===r.id,can=S.churu>=r.cost;
@@ -1030,9 +1035,7 @@ function renderShop(){
   $('#shopRoom').querySelectorAll('.roomb').forEach(b=>b.onclick=()=>{
     const r=ROOMS.find(x=>x.id===b.dataset.r);
     if(S.roomBought.includes(r.id)){if(S.room!==r.id){S.room=r.id;save();applyRoom();renderDeco();decoCat.hearts(3);decoCat.face('pet',1000)}return}
-    if(S.churu<r.cost){toast('츄르가 모자라요. '+(r.cost-S.churu)+'개 더 모으면 살 수 있어요');return}
-    S.churu-=r.cost;S.roomBought.push(r.id);S.room=r.id;save();applyRoom();renderDeco();renderAll();
-    decoCat.hop();decoCat.hearts(6);decoCat.say(fmt('우와, {cat이} 방이 예뻐졌어!'),3000);
+    buySheet('room',r);
   });
   $('#shopFrame').innerHTML=FRAMES.map(f=>{
     const has=S.frameBought.includes(f.id),on=S.frame===f.id,can=S.churu>=f.cost;
@@ -1044,10 +1047,55 @@ function renderShop(){
   $('#shopFrame').querySelectorAll('.roomb').forEach(b=>b.onclick=()=>{
     const f=FRAMES.find(x=>x.id===b.dataset.f);
     if(S.frameBought.includes(f.id)){if(S.frame!==f.id){S.frame=f.id;save();applyFrame();renderDeco();decoCat.hearts(3);decoCat.face('pet',1000)}return}
-    if(S.churu<f.cost){toast('츄르가 모자라요. '+(f.cost-S.churu)+'개 더 모으면 살 수 있어요');return}
-    S.churu-=f.cost;S.frameBought.push(f.id);S.frame=f.id;save();applyFrame();renderDeco();renderAll();
-    decoCat.hop();decoCat.hearts(6);decoCat.say(fmt('{cat이} 액자도 예뻐졌어!'),3000);
+    buySheet('frame',f);
   });
+}
+/* 상점은 누르자마자 사지 않는다: 미리보기 → '구매하기'를 한 번 더 눌러야 산다.
+   (2026-09-28 지연 피드백 — 액자 미리 보려고 눌렀다가 12츄르가 바로 나감) */
+function previewHTML(kind,it){
+  const rm=kind==='room'?it:(ROOMS.find(x=>x.id===S.room)||ROOMS[0]);
+  const fr=kind==='frame'?it:(FRAMES.find(x=>x.id===S.frame)||FRAMES[0]);
+  const wear=kind==='acc'?[...new Set([...S.wear,it.id])]:S.wear;
+  const photo=S.look==='photo'||kind==='frame';   // 액자는 사진 냥이에만 보이니까 사진으로 보여준다
+  const vars=`--room-wall:${rm.wall};--room-floor1:${rm.f1};--room-floor2:${rm.f2};--room-border:${rm.bd};--room-rug:${rm.rug};--frame-bd:${fr.bd};--frame-bg:${fr.bg};--frame-tape:${fr.tape}`;
+  const cat=photo?stickerHTML('happy'):catSVG().replace('class="cat"','class="cat happyface"');
+  return `<div class="stage bpv" style="${vars}"><div class="wall"><div class="win"><div class="cloud"></div></div></div><div class="floor"></div><div class="rug"></div>
+    <div class="bpcat ${photo?'photo':''} ${wear.map(id=>'w-'+id).join(' ')}">${cat}</div></div>`;
+}
+function buySheet(kind,it){
+  const can=S.churu>=it.cost,t0=Date.now();
+  openModal(`${previewHTML(kind,it)}<p class="bpname">${it.n}</p>
+    <div class="bpcost"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg>${it.cost}</div>
+    <p class="note" style="margin:10px 0 0">${can?`지금 츄르 ${S.churu}개 → 사고 나면 ${S.churu-it.cost}개`:`츄르가 ${it.cost-S.churu}개 모자라요. 조금만 더 모아 봐요!`}</p>
+    ${kind==='frame'&&S.look!=='photo'?'<p class="note" style="margin:4px 0 0">액자는 사진 냥이 모습일 때 보여요</p>':''}
+    ${can?`<div class="row" style="margin-top:16px"><button class="btn sub ghost" id="bp-no">안 살래요</button><button class="btn sub" id="bp-yes" style="color:#fff">구매하기</button></div>`
+         :`<button class="btn sub ghost" id="bp-no" style="margin-top:16px">알겠어요</button>`}`);
+  $('#bp-no').onclick=closeModal;
+  if(can)$('#bp-yes').onclick=e=>{if(Date.now()-t0<500)return;   // 두 번 연달아 눌러서 사지는 것 방지
+    e.currentTarget.disabled=true;buyItem(kind,it)};
+}
+function buyItem(kind,it){
+  const list=kind==='acc'?S.bought:kind==='frame'?S.frameBought:S.roomBought;
+  closeModal();
+  if(list.includes(it.id)||S.churu<it.cost)return;
+  S.churu-=it.cost;list.push(it.id);
+  if(kind==='acc'){if(!S.wear.includes(it.id))S.wear.push(it.id);save();renderAll();
+    [homeCat,focusCat].forEach(c=>c.setMood(c.mood));decoCat.hop();decoCat.face('pet',1500);decoCat.hearts(6);
+    decoCat.say(fmt('{me} 고마워! 바로 착용할게'),3000)}
+  else if(kind==='frame'){S.frame=it.id;save();applyFrame();renderAll();
+    decoCat.hop();decoCat.hearts(6);decoCat.say(fmt('{cat이} 액자도 예뻐졌어!'),3000)}
+  else{S.room=it.id;save();applyRoom();renderAll();
+    decoCat.hop();decoCat.hearts(6);decoCat.say(fmt('우와, {cat이} 방이 예뻐졌어!'),3000)}
+  toast(it.n+(kind==='acc'?' 샀어요! 바로 착용했어요':' 샀어요! 바로 적용했어요'));
+}
+/* 한 번만: 미리보기 없이 바로 사졌던 12츄르 액자 값을 돌려준다(액자는 그대로 둔다) */
+function shopRefund(){
+  if(S.shopFix)return;
+  S.shopFix=1;
+  if(!S.frameBought.some(id=>(FRAMES.find(f=>f.id===id)||{}).cost===12)){save();return}
+  S.churu+=12;save();renderAll();
+  openModal(`${miniCat()}<p class="rewardnum">츄르 +12</p><p class="line">미리 보려다 바로 사져서 속상했죠?<br>츄르 12개 돌려드려요.<br>액자는 그대로 가져요!</p>
+    <p class="note">이제는 상점에서 누르면 먼저 미리 보여주고,<br><b>구매하기</b>를 한 번 더 눌러야 사져요.</p><br><button class="btn" onclick="closeModal()">고마워요</button>`);
 }
 
 /* ---------- 설정 / 알림 ---------- */
@@ -1137,6 +1185,7 @@ function boot(){
   }
   const q=new URLSearchParams(location.search);
   if(q.get('from')==='push'&&S.me&&!S.run){setTimeout(()=>{if(mood()!=='happy')homeCat.say(say(mood()==='sleep'?'wake':'normal'),5000)},900)}
+  if(S.me&&!S.run)setTimeout(shopRefund,700);
   syncSW();
 }
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
