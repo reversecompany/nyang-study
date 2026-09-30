@@ -60,6 +60,7 @@ async function migrateIds(){
 function st(){
   if (!S.sm) S.sm = {c:{}, r:{}, d:{}, rounds:{}, hist:[]};
   if (!S.sm.mock) S.sm.mock = [];
+  S.sm.mock.forEach(m => { if (!m.d){ m.d = m.y+'-'+z(m.mo)+'-01'; m.est = 1; } });   // 옛 기록: 날짜를 몰라 그 달 1일로 두고 표시만 다르게
   return S.sm;
 }
 const now = () => Date.now();
@@ -114,13 +115,25 @@ function chapterStats(){
   }
   return out;
 }
+/* 모의고사 점수: 날짜순으로 정렬, 최근 3회를 (오래된 것 1 : 중간 2 : 최근 3)로 가중 평균 */
+const mockSorted = () => st().mock.slice().sort((a,b) => a.d.localeCompare(b.d) || a.t - b.t);
+function mockEst(){
+  const a = mockSorted(); if (!a.length) return null;
+  const r = a.slice(-3); let w = 0, sum = 0; r.forEach((m,i) => { w += i+1; sum += (i+1)*m.sc; });
+  return {v: sum/w, n: a.length, last: a[a.length-1]};
+}
+/* 예상 점수 = 모의고사(실전 점수)를 중심에 두고, 카드·자료 계산으로 쌓은 실력을 곁들인다.
+   모의고사 1회 55% · 2회 65% · 3회 이상 75%. 모의고사가 없으면 카드만, 카드를 안 풀었으면 모의고사만. */
 function predict(){
   const cs = chapterStats();
-  const raw = cs.reduce((a,c) => a + CH[c.ch].w/WSUM*20 * c.p * 2.5, 0);
+  const cardRaw = cs.reduce((a,c) => a + CH[c.ch].w/WSUM*20 * c.p * 2.5, 0);
   const sure = cs.filter(c=>c.sure).reduce((a,c)=>a+CH[c.ch].w,0) / WSUM;
-  const score = Math.round(raw*2)/2;
+  const seen = Object.keys(st().c).length, me = mockEst();
+  let raw = cardRaw, wm = 0;
+  if (me){ wm = seen ? [.55,.65,.75][Math.min(me.n,3)-1] : 1; raw = wm*me.v + (1-wm)*cardRaw; }
+  const score = Math.max(0, Math.min(50, Math.round(raw*2)/2));
   const g = CUTS.find(([s]) => score >= s)[1];
-  return {score, grade:g, sure, cs};
+  return {score, grade:g, sure, cs, cardScore: Math.round(cardRaw*2)/2, mock: me ? Math.round(me.v*2)/2 : null, mockN: me ? me.n : 0, wm, seen};
 }
 
 /* ---------- 한 판 고르기 ---------- */
@@ -300,13 +313,16 @@ function render(){
   const wrongN = Object.keys(s.c).filter(id => BYID[id] && !s.c[id].ok).length;
   const dueN = CARDS.filter(c => s.c[c.id] && s.c[c.id].due <= now()).length;
   const seenN = Object.keys(s.c).length;
-  const prev = s.hist.length ? s.hist[s.hist.length-1] : null;
-  box.innerHTML = `
+  const has = seenN > 0 || P.mockN > 0;
+  const basis = !has ? '한 판 풀거나 모의고사 점수를 넣으면 첫 예상 점수가 나와요'
+    : P.mockN ? `모의고사 ${P.mockN}회(최근 평균 ${P.mock}점)를 ${Math.round(P.wm*100)}% 반영했어요<br>${seenN ? `카드·자료 계산 기준 ${P.cardScore}점` : '카드는 아직 안 풀었어요'}`
+    : `단원 ${Math.round(P.sure*100)}% 측정 완료 · 풀수록 정확해져요`;
+  box.innerHTML = `<div class="smL">
     <div class="card smscore">
       <div class="lbl">예상 점수 <span class="note">/ 50점</span></div>
-      <div class="big"><b>${seenN ? P.score : '?'}</b><span class="gr">${seenN ? P.grade+'등급' : '측정 전'}</span></div>
-      <div class="meter"><i style="width:${Math.round(P.sure*100)}%"></i></div>
-      <p class="note">${seenN ? `단원 ${Math.round(P.sure*100)}% 측정 완료 · 풀수록 정확해져요` : '한 판만 풀면 첫 예상 점수가 나와요'}</p>
+      <div class="big"><b>${has ? P.score : '?'}</b><span class="gr">${has ? P.grade+'등급' : '측정 전'}</span></div>
+      <div class="meter" style="${seenN ? '' : 'display:none'}"><i style="width:${Math.round(P.sure*100)}%"></i></div>
+      <p class="note">${basis}</p>
     </div>
     <button class="btn" id="sm-go">한 판 풀기 <small class="jua" style="font-size:15px;opacity:.85">· 10문제 약 4분</small></button>
     <div class="smday">${Array.from({length:GOAL_ROUNDS},(_,i)=>`<i class="${i<rounds?'on':''}"></i>`).join('')}
@@ -321,61 +337,65 @@ function render(){
         <span class="t"><em>${CH[c.ch].u}</em>${c.ch}. ${CH[c.ch].n}${CH[c.ch].w>=1.6?' <b class="hot">자주 나옴</b>':''}${c.seen?`<br><small style="font-size:11px;color:#c7b3bb">${c.seen}/${c.n}장 학습</small>`:''}</span>
         <span class="tr"><i style="width:${c.seen?Math.round(c.prog*100):0}%;background:${c.prog>=.8?'var(--mint)':c.prog>=.55?'var(--butter)':'var(--pink)'}"></i></span>
         <span class="v">${c.seen ? Math.round(c.prog*100)+'%' : '—'}</span></button>`).join('')}
-    </div>
+    </div></div><div class="smR">
     ${mockCard()}
     <p class="note" style="font-size:14px;line-height:1.5">출처: 2027 마더텅 수능기출 사회·문화 「기출 OX 607제」(정답·해설은 교재 정답표), 2027 EBS 수능특강 사회·문화 개념 체크·용어 정리, 윤성훈 사회문화 HOT 100, 문서연 에센셜(기출 선지 분류, 정답·해설은 교재 정답판).
-      예상 점수는 2026학년도 6·9월 모평과 수능의 단원별 문항 수로 가중한 추정이고, 등급은 최근 수능의 대략적인 등급컷으로 바꾼 참고값이에요.</p>`;
+      예상 점수는 2026학년도 6·9월 모평과 수능의 단원별 문항 수로 가중한 추정이고, 등급은 최근 수능의 대략적인 등급컷으로 바꾼 참고값이에요. 모의고사 점수를 넣으면 그 점수를 가장 크게 반영해요.</p></div>`;
   $('#sm-go').onclick = () => start({});
   $('#sm-wrong').onclick = () => start({wrong:true});
   $('#sm-drill').onclick = () => start({drillOnly:true});
   box.querySelectorAll('.smch').forEach(b => b.onclick = () => start({ch:+b.dataset.ch}));
-  $('#sm-mock').onclick = mockSheet;
-  box.querySelectorAll('.mockx').forEach(b => b.onclick = () => {
-    const s = st(), y = +b.dataset.y, mo = +b.dataset.mo, t = +b.dataset.t;
-    s.mock = s.mock.filter(m => !(m.y===y && m.mo===mo && m.t===t));
-    save(); render();
-  });
+  $('#sm-mock').onclick = () => mockSheet();
+  box.querySelectorAll('.mockrow').forEach(b => b.onclick = () => mockSheet(+b.dataset.t));
 }
 
-/* ---------- 모의고사 점수 기록 ---------- */
+/* ---------- 모의고사 점수 기록: 본 날짜·몇 번째·그래프 (2026-09-30 지연 피드백: 3월·6월·9월이 뒤죽박죽이라 언제 풀었는지 모름) ---------- */
+const mdText = d => { const dt = kToDate(d); return `${dt.getMonth()+1}월 ${dt.getDate()}일 (${WD[dt.getDay()]})`; };
+const mdShort = m => m.est ? (+m.d.split('-')[1])+'월' : (+m.d.split('-')[1])+'/'+(+m.d.split('-')[2]);
 function mockCard(){
-  const s = st();
-  const groups = {};
-  s.mock.forEach(m => (groups[m.y+'-'+m.mo] = groups[m.y+'-'+m.mo] || []).push(m));
-  const keys = Object.keys(groups).sort((a,b) => {
-    const [ay,am] = a.split('-').map(Number), [by,bm] = b.split('-').map(Number);
-    return by-ay || bm-am;
-  });
-  const body = keys.length ? keys.map(k => {
-    const [y,mo] = k.split('-');
-    const arr = groups[k].slice().sort((x,y) => x.t - y.t);
-    return `<div class="mockgrp"><div class="mockhd">${y}년 ${mo}월</div>${arr.map((m,i) => {
-      const d = i ? m.sc - arr[i-1].sc : null;
-      return `<div class="mockrow"><span>${i+1}회</span><b>${m.sc}점</b>${d!==null?`<span class="mockd ${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d}</span>`:''}<button class="mockx" data-y="${y}" data-mo="${mo}" data-t="${m.t}">✕</button></div>`;
-    }).join('')}</div>`;
-  }).join('') : `<p class="note" style="margin:0">아직 기록이 없어요. 모의고사를 보면 점수를 넣어보세요.</p>`;
-  return `<div class="card sec"><h3>모의고사 기록</h3>${body}<button class="btn sub mint" id="sm-mock" style="color:var(--ink);margin-top:${keys.length?'12px':'10px'}">+ 점수 기록하기</button></div>`;
+  const a = mockSorted(), n = a.length;
+  let body;
+  if (!n) body = `<p class="note" style="margin:0 0 10px">아직 기록이 없어요. 모의고사를 보면 본 날짜와 점수를 넣어보세요.</p>`;
+  else {
+    const scs = a.map(m => m.sc), best = Math.max(...scs), avg = Math.round(scs.reduce((x,y)=>x+y,0)/n*10)/10, last = a[n-1];
+    const cuts = CUTS.filter(c => c[1] <= 5).map(([v,g]) => ({v, l: g+'등급'}));
+    body = `<div class="msum"><div><b>${last.sc}점</b><span>최근</span></div><div><b>${best}점</b><span>최고</span></div><div><b>${avg}점</b><span>${n}회 평균</span></div></div>`
+      + (n >= 2 ? lineChart(a.map(m => ({v:m.sc, label:mdShort(m)})), {cuts}) : '')
+      + `<div class="mocklist">` + a.map((m,i) => ({m,i})).reverse().map(({m,i}) => {
+        const dd = i ? m.sc - a[i-1].sc : null;
+        return `<div class="mockrow ${i===n-1?'last':''}" data-t="${m.t}"><span class="mockn">${i+1}번째</span><b>${m.sc}점</b>${dd!==null?`<span class="mockd ${dd>0?'up':dd<0?'down':''}">${dd>0?'+':''}${dd}</span>`:''}`
+          + `<span class="md" style="margin-left:auto;text-align:right">${m.est ? `${+m.d.split('-')[1]}월 <span class="est">날짜 정하기</span>` : mdText(m.d)}${m.n ? ' · '+esc(m.n) : ''}</span></div>`;
+      }).join('') + `</div><p class="smsub" style="margin:8px 0 0">날짜순으로 정렬돼요. 누르면 날짜·점수를 고칠 수 있어요.</p>`;
+  }
+  const byDay = {}; st().hist.forEach(h => byDay[h.d] = h.sc);
+  const days = Object.keys(byDay).sort().slice(-10);
+  const pred = days.length >= 2 ? `<h3 style="margin:18px 0 6px">예상 점수 변화</h3>${lineChart(days.map(d => ({v:byDay[d], label:(+d.split('-')[1])+'/'+(+d.split('-')[2])})), {h:170})}` : '';
+  return `<div class="card sec"><h3>모의고사 기록</h3>${body}<button class="btn sub mint" id="sm-mock" style="color:var(--ink);margin-top:12px">+ 점수 기록하기</button>${pred}</div>`;
 }
-function mockSheet(){
-  const yNow = new Date().getFullYear();
-  openSheet(`<h3>모의고사 점수 기록</h3>
-    <div class="field"><label>연도</label><input class="inp" id="mk-y" type="number" inputmode="numeric" value="${yNow}" min="2015" max="2035"></div>
-    <h3 style="margin-top:14px">몇 월 모의고사?</h3>
-    <div class="chips" id="mk-mo" style="grid-template-columns:repeat(4,1fr)">${[3,4,5,6,7,9,10,11].map(m=>`<button class="chip" style="--c:#ffe7ee;padding:12px 4px;font-size:17px" data-m="${m}">${m}월</button>`).join('')}</div>
-    <div class="field"><label>원점수 <span class="note">/ 50점</span></label><input class="inp" id="mk-s" type="number" inputmode="numeric" min="0" max="50" placeholder="예: 38"></div>
-    <button class="btn mint" id="mk-ok" style="color:var(--ink)">기록하기</button>`);
-  let mo = null;
-  $('#mk-mo').querySelectorAll('.chip').forEach(b => b.onclick = () => {
-    $('#mk-mo').querySelectorAll('.chip').forEach(x => x.classList.remove('sel'));
-    b.classList.add('sel'); mo = +b.dataset.m;
-  });
+function mockSheet(t){
+  const ed = t != null ? st().mock.find(m => m.t === t) : null, today = dayOf();
+  openSheet(`<h3>${ed ? '모의고사 기록 고치기' : '모의고사 점수 기록'}</h3>
+    <div class="field"><label>본 날짜 <span class="note">— 바꿀 수 있어요</span></label><input class="inp" id="mk-d" type="date" value="${ed ? ed.d : today}" max="${today}"></div>
+    <div class="field"><label>원점수 <span class="note">/ 50점</span></label><input class="inp" id="mk-s" type="number" inputmode="numeric" min="0" max="50" placeholder="예: 38" value="${ed ? ed.sc : ''}"></div>
+    <div class="field"><label>이름 <span class="note">(안 써도 돼요)</span></label><input class="inp" id="mk-n" maxlength="12" placeholder="예: 6월 모평" value="${ed && ed.n ? esc(ed.n) : ''}">
+      <div class="chips mini6" id="mk-q" style="margin:8px 0 0;grid-template-columns:repeat(5,1fr)">${['3월 학평','6월 모평','9월 모평','수능','학원'].map(x => `<button class="chip" style="--c:#ffe7ee;padding:8px 2px;font-size:14px">${x}</button>`).join('')}</div></div>
+    <div class="row" style="margin-top:6px">${ed ? '<button class="btn sub ghost" id="mk-del">지우기</button>' : '<button class="btn sub ghost" id="mk-no">취소</button>'}<button class="btn sub mint" id="mk-ok" style="color:var(--ink)">${ed ? '저장' : '기록하기'}</button></div>`);
+  $('#mk-q').querySelectorAll('.chip').forEach(b => b.onclick = () => { $('#mk-n').value = b.textContent; });
+  if ($('#mk-no')) $('#mk-no').onclick = closeSheet;
+  if ($('#mk-del')) $('#mk-del').onclick = () => {
+    openModal(`<p class="rewardnum" style="font-size:25px">이 기록을 지울까요?</p><p class="line">${mdText(ed.d)} · ${ed.sc}점</p><br>
+      <div class="row" style="margin:0"><button class="btn sub ghost" onclick="closeModal()">안 지울래</button><button class="btn sub" id="mk-del2" style="color:#fff">지우기</button></div>`);
+    $('#mk-del2').onclick = () => { st().mock = st().mock.filter(m => m !== ed); save(); closeModal(); closeSheet(); render(); toast('지웠어요'); };
+  };
   $('#mk-ok').onclick = () => {
-    const y = +$('#mk-y').value, sc = +$('#mk-s').value;
-    if (!y || !mo){ toast('연도랑 월을 골라줘'); return; }
-    if (!Number.isFinite(sc) || sc < 0 || sc > 50){ toast('점수는 0~50 사이로 입력해줘'); return; }
-    st().mock.push({y, mo, sc, t: now()});
+    const d = $('#mk-d').value, raw = $('#mk-s').value, sc = +raw, nm = $('#mk-n').value.trim();
+    if (!d){ toast('본 날짜를 골라줘'); return; }
+    if (d > today){ toast('앞으로의 날은 기록할 수 없어요'); return; }
+    if (raw === '' || !Number.isFinite(sc) || sc < 0 || sc > 50){ toast('점수는 0~50 사이로 입력해줘'); return; }
+    if (ed){ ed.d = d; ed.sc = sc; ed.n = nm; delete ed.est; }
+    else st().mock.push({d, sc, n:nm, t:now()});
     save(); closeSheet(); render();
-    toast('기록했어요!');
+    toast(ed ? '고쳤어요!' : '기록했어요!');
   };
 }
 
@@ -496,15 +516,15 @@ function finish(){
   s.rounds[d] = (s.rounds[d]||0) + 1;
   const P = predict();
   s.hist.push({d, sc:P.score}); if (s.hist.length > 120) s.hist.shift();
-  const mins = Math.max(1, Math.round((now()-g.t0)/60000));
+  const mins = Math.max(1, Math.min(Math.round((now()-g.t0)/60000), Math.ceil(g.q.length*1.5)));   // 화면만 켜 두고 자리를 비운 시간은 공부 시간으로 안 친다
   const before = studyDays().length;
-  S.sessions.push({d, s:'soc', m:mins, t:now(), h:'quiz'});
-  if (typeof albumAdd === 'function') albumAdd(d);
   const churu = 1 + (ok >= n*.8 ? 1 : 0);
+  S.sessions.push({d, s:'soc', m:mins, t:now(), h:'quiz', c:churu});
+  if (typeof albumAdd === 'function') albumAdd(d);
   S.churu += churu;
   save(); renderAll(); render();
   const diff = Math.round((P.score - g.before)*2)/2;
-  const line = ok === n ? pick(['전부 맞았어! {cat이} 꼬리를 멈추질 않아','만점이야, {me} 진짜 멋있다'])
+  const line = ok === n ? pick(['전부 맞았어! {cat이} 골골송이 멈추질 않아','만점이야, {me} 진짜 멋있다'])
              : ok >= n*.7 ? pick(['거의 다 맞았어! 틀린 건 금방 다시 나와','{me} 머릿속에 개념이 쌓이는 중'])
              : pick(['틀린 만큼 외운 거야. 한 판 더 하면 확 달라져','괜찮아, 처음은 원래 이래. {cat이} 옆에 있을게']);
   const after = studyDays().length;
