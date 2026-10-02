@@ -1836,10 +1836,14 @@ async function syncPull(adopt=false){   // adopt: 이 기기를 처음 연결할
     if(r.upd<(S.upd||0))await syncPush();
     lastSync=Date.now();renderSyncCard();return 'same'}catch(e){return 'err'}}
 function syncLink(){return APP_URL+'#k='+syncK}
+/* iPad 홈 화면 앱은 열 때 주소 뒤(#k=)를 버리는 경우가 있다. 쿠키는 iOS 17+ 에서 '홈 화면에 추가'하는 순간 앱으로 복사되므로 코드를 쿠키에도 둔다. */
+function ckSet(k){try{document.cookie='nyang_k='+k+';max-age=31536000;path=/;SameSite=Lax'+(location.protocol==='https:'?';Secure':'')}catch(e){}}
+function ckGet(){try{return (document.cookie.match(/(?:^|; )nyang_k=(ny-[a-z0-9]{12})/)||[])[1]}catch(e){}}
 addEventListener('hashchange',()=>{const m=location.hash.match(/k=(ny-[a-z0-9]{12})/);if(!m)return;
   history.replaceState(null,'',location.pathname+location.search);if(m[1]!==syncK)linkDevice(m[1])});
 async function linkDevice(k){
   syncK=k;try{localStorage.setItem(SYNCK,k);if(S.sessions.length)localStorage.setItem(KEY+'.bak',JSON.stringify(S))}catch(e){}
+  ckSet(k);
   const res=await syncPull(true);
   if(res==='pulled')toast(fmt('연결됐어요! 이제 여기서도 {cat랑} 같은 기록이에요'));
   else if(res==='err'){toast('인터넷 연결을 확인하고 다시 열어 주세요')}
@@ -1851,15 +1855,16 @@ async function autoLink(){
   syncK=k;if(!S.upd)S.upd=Date.now();
   if(!await syncPush(true)){syncK=null;return false}
   try{localStorage.setItem(SYNCK,k)}catch(e){}
-  renderSyncCard();return true;
+  ckSet(k);renderSyncCard();return true;
 }
 function linkSheet(){
   openSheet(`<h3>다른 기기에서 열기</h3><p class="hint">컴퓨터나 다른 폰에서 이 링크를 열면 끝이에요.<br>카톡 '나와의 채팅'으로 보내 두면 편해요.</p>
     <input class="inp" readonly value="${syncLink()}" style="font-size:14px" onclick="this.select()"><br><br>
-    <button class="btn" id="lk-share">링크 보내기</button>
+    <button class="btn" id="lk-share">링크 보내기</button><button class="link" id="lk-copy" style="display:block;margin:10px auto 0">링크만 복사</button>
     <p class="note" style="margin-top:12px">이 링크는 ${fmt('{me}')}만의 열쇠예요. 다른 사람한테는 보내지 마세요.</p>`);
-  $('#lk-share').onclick=async()=>{const text=fmt('냥공부 ({me}) — 이 링크로 열면 같은 기록이에요\n')+syncLink();
-    try{if(navigator.share){await navigator.share({text});return}}catch(e){if(e.name==='AbortError')return}
+  $('#lk-copy').onclick=async()=>{try{await navigator.clipboard.writeText(syncLink());toast('링크만 복사했어요')}catch(e){prompt('이 링크를 복사해 주세요',syncLink())}};
+  $('#lk-share').onclick=async()=>{
+    try{if(navigator.share){await navigator.share({title:'냥공부',url:syncLink()});return}}catch(e){if(e.name==='AbortError')return}
     try{await navigator.clipboard.writeText(syncLink());toast('링크 복사 완료!')}catch(e){prompt('이 링크를 복사해 주세요',syncLink())}};
 }
 function codeSheet(){
@@ -1878,8 +1883,8 @@ function renderSyncCard(){
     $('#sy-code').onclick=codeSheet;return}
   const ago=lastSync?Math.round((Date.now()-lastSync)/60000):null;
   c.innerHTML=`<h3>기기 연결됨</h3><p class="note" style="margin-top:0">어디서 공부해도 같은 기록으로 이어져요.${ago===null?'':ago<1?' 방금 동기화했어요.':` ${ago}분 전에 동기화했어요.`}</p>
-    <button class="btn sub ghost" id="sy-send">다른 기기에 링크 보내기</button><button class="link" id="sy-now">지금 동기화</button>`;
-  $('#sy-send').onclick=linkSheet;
+    <button class="btn sub ghost" id="sy-send">다른 기기에 링크 보내기</button><button class="btn sub ghost" id="sy-code" style="margin-top:8px">다른 기기 기록 불러오기 (링크를 받았어요)</button><button class="link" id="sy-now">지금 동기화</button>`;
+  $('#sy-send').onclick=linkSheet;$('#sy-code').onclick=codeSheet;
   $('#sy-now').onclick=async()=>{const r=await syncPull();toast(r==='err'?'인터넷 연결을 확인해 주세요':r==='pulled'?'다른 기기 기록을 불러왔어요':'최신 상태예요')};
 }
 
@@ -1936,8 +1941,9 @@ function boot(){
   if(q.get('from')==='push'&&S.me&&!S.run){setTimeout(()=>{if(mood()!=='happy')homeCat.say(say(mood()==='sleep'?'wake':'normal'),5000)},900)}
   syncSW();
   // 동기화를 먼저 끝내고(최대 4초) 나서 1회성 알림(환불·앨범)을 띄운다 — 오래된 기기 기록이 새 기록을 덮지 않게
-  const hk=(location.hash.match(/k=(ny-[a-z0-9]{12})/)||[])[1];
-  if(hk)history.replaceState(null,'',location.pathname+location.search);
+  const hk=(location.hash.match(/k=(ny-[a-z0-9]{12})/)||[])[1]||(syncK?null:ckGet());   // 주소·저장이 비었으면 쿠키에서 되찾는다
+  if(location.hash.match(/k=ny-/))history.replaceState(null,'',location.pathname+location.search);
+  if(syncK)ckSet(syncK);
   const first=hk&&hk!==syncK?linkDevice(hk):syncPull();
   Promise.race([first,new Promise(r=>setTimeout(r,4000))]).then(()=>{
     autoLink();
